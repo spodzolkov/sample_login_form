@@ -1,0 +1,175 @@
+/* style.css */
+
+/* Загальні стилі для body */
+body {
+    background-color: #f3f4f6; /* bg-gray-100 */
+    display: flex; /* flex */
+    justify-content: center; /* justify-center */
+    align-items: center; /* items-center */
+    min-height: 100vh; /* min-h-screen */
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    padding: 1rem; /* p-4 */
+}
+
+/* Адаптивність для body */
+@media (min-width: 640px) { /* sm breakpoint */
+    body {
+        padding: 1.5rem; /* sm:p-6 */
+    }
+}
+@media (min-width: 768px) { /* md breakpoint */
+    body {
+        padding: 2rem; /* md:p-8 */
+    }
+}
+
+/* Стилі для контейнера форми (карти) */
+.card-container {
+    background-color: #ffffff; /* bg-white */
+    padding: 1.5rem; /* p-6 */
+    border-radius: 0.75rem; /* rounded-xl */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+    width: 100%; /* w-full */
+    max-width: 28rem; /* max-w-md */
+    border: 1px solid #e5e7eb; /* border border-gray-200 */
+    text-align: center; /* text-center */
+}
+
+/* Адаптивність для контейнера */
+@media (min-width: 640px) { /* sm breakpoint */
+    .card-container {
+        padding: 2rem; /* sm:p-8 */
+    }
+}
+
+/* Стилі для полів введення */
+.form-input {
+    display: block; /* block */
+    width: 100%; /* w-full */
+    padding: 0.5rem 1rem; /* px-4 py-2 */
+    border: 1px solid #d1d5db; /* border border-gray-300 */
+    border-radius: 0.5rem; /* rounded-lg */
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+    font-size: 1rem; /* text-base */
+    outline: none; /* outline-none */
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-input:hover {
+    border-color: #818cf8; /* hover:border-indigo-400 */
+}
+
+.form-input:focus {
+    border-color: #6366f1; /* focus:border-indigo-500 */
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25); /* focus:ring-indigo-500 */
+}
+
+/* Стилі для кнопки перемикання видимості пароля */
+#togglePassword {
+    font-size: 0.875rem; /* text-sm */
+    line-height: 1.25rem; /* leading-5 */
+    background: none;
+    border: none;
+    cursor: pointer;
+    user-select: none;
+    position: absolute; /* absolute */
+    inset-y: 0; /* inset-y-0 */
+    right: 0; /* right-0 */
+    padding-right: 0.75rem; /* pr-3 */
+    display: flex; /* flex */
+    align-items: center; /* items-center */
+    color: #4b5563; /* text-gray-600 */
+    transition: color 0.15s ease-in-out;
+}
+
+#togglePassword:hover {
+    color: #1f2937; /* hover:text-gray-900 */
+}
+
+#togglePassword:focus {
+    outline: none; /* focus:outline-none */
+    color: #1f2937; /* focus:text-gray-900 */
+}
+
+/* Стилі для основної кнопки (Увійти, Вийти) */
+.primary-button {
+    width: 100%; /* w-full */
+    display: inline-flex; /* inline-flex (for a, not button) or flex (for button) */
+    justify-content: center; /* justify-center */
+    padding: 0.5rem 1rem; /* py-2 px-4 */
+    border: 1px solid transparent; /* border border-transparent */
+    border-radius: 0.5rem; /* rounded-lg */
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+    font-size: 1.125rem; /* text-lg */
+    font-weight: 600; /* font-semibold */
+    color: #ffffff; /* text-white */
+    background-color: #4f46e5; /* bg-indigo-600 */
+    transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    outline: none;
+    text-decoration: none; /* For links */
+}
+
+.primary-button:hover {
+    background-color: #4338ca; /* hover:bg-indigo-700 */
+}
+
+.primary-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.5), 0 0 0 6px rgba(99, 102, 241, 0.25); /* focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 */
+}
+
+/* Стилі для кнопки реєстрації */
+.signup-button {
+    width: 100%; /* w-full */
+    display: flex;
+    justify-content: center;
+    padding: 0.5rem 1rem; /* py-2 px-4 */
+    border: 1px solid transparent; /* border border-transparent */
+    border-radius: 0.5rem; /* rounded-lg */
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+    font-size: 1.125rem; /* text-lg */
+    font-weight: 600; /* font-semibold */
+    color: #ffffff; /* text-white */
+    background-color: #22c55e; /* bg-green-600 */
+    transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    outline: none;
+}
+
+.signup-button:hover {
+    background-color: #16a34a; /* hover:bg-green-700 */
+}
+
+.signup-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.5), 0 0 0 6px rgba(34, 197, 94, 0.25); /* focus:ring-2 focus:ring-offset-2 focus:ring-green-500 */
+}
+
+/* Стилі для посилання Зареєструватися/Увійти */
+.form-link {
+    font-weight: 500; /* font-medium */
+    color: #4f46e5; /* text-indigo-600 */
+    transition: color 0.15s ease-in-out;
+    text-decoration: none; /* Ensure no default underline */
+}
+
+.form-link:hover {
+    color: #6366f1; /* hover:text-indigo-500 */
+    text-decoration: underline;
+}
+
+/* Стилі для заголовків */
+.page-title {
+    font-size: 2.25rem; /* text-4xl */
+    font-weight: 700; /* font-bold */
+    color: #1f2937; /* text-gray-800 */
+    letter-spacing: -0.025em; /* tracking-tight */
+    margin-bottom: 2rem; /* mb-8 */
+}
+
+/* Адаптивність для заголовка */
+@media (max-width: 640px) {
+    .page-title {
+        font-size: 1.875rem; /* Зменшення розміру заголовка для мобільних */
+    }
+}
