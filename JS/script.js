@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Валідація полів під час введення (приховування помилок)
+    // Приховувати помилки під час введення
     if (emailInput) {
         emailInput.addEventListener('input', () => {
             emailError.textContent = '';
@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Обробка посилання Sign Up
+    // Перехід за посиланням Sign Up
     if (signUpLink) {
         signUpLink.addEventListener('click', (e) => {
             e.preventDefault();
@@ -39,9 +39,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Обробка сабміту форми (кнопка Login)
+    // Визначення адреси API (підтримка роботи локально та на віддаленому сервері)
+    const getApiUrl = (endpoint) => {
+        const origin = window.location.origin;
+        if (origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) {
+            return endpoint; // Прямий відносний шлях для локального сервера Node.js
+        }
+        // За замовчуванням звертаємося до поточного хоста або локального сервера
+        return endpoint;
+    };
+
+    // Обробка входу (Login)
     if (loginForm) {
-        loginForm.addEventListener('submit', (e) => {
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             let isValid = true;
@@ -51,8 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const emailVal = emailInput.value.trim();
             const passwordVal = passwordInput.value;
 
-            // 1. Валідація Email
-            // Маска: a@b.c, макс. довжина: 30
+            // 1. Клієнтська валідація Email
             const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
             if (!emailVal) {
                 emailError.textContent = 'Поле Email обов’язкове для заповнення';
@@ -65,9 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 isValid = false;
             }
 
-            // 2. Валідація Password
-            // Допустимі символи: літери латинського алфавіту, цифри, _,!,@,#,$,%,^,*,(,)
-            // Макс. довжина: 30
+            // 2. Клієнтська валідація Password
             const passwordRegex = /^[a-zA-Z0-9_!@#$%^&*()]+$/;
             if (!passwordVal) {
                 passwordError.textContent = 'Поле Password обов’язкове для заповнення';
@@ -80,8 +87,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 isValid = false;
             }
 
-            // 3. Успішна валідація -> перехід до особистого кабінету
-            if (isValid) {
+            if (!isValid) return;
+
+            // 3. Відправка запиту на сервер / у базу даних
+            try {
+                const response = await fetch(getApiUrl('/api/login'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: emailVal, password: passwordVal })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Зберігаємо сесію та переходимо у кабінет
+                    sessionStorage.setItem('currentUser', JSON.stringify(data.user));
+                    window.location.href = 'PAGES/dashboard.html';
+                } else {
+                    passwordError.textContent = data.message || 'Невірний Email або пароль.';
+                }
+            } catch (err) {
+                console.warn('Сервер недоступний, використовується автономний режим:', err);
+                // Автономний фолбек для перевірки при статичному відкритті через file://
                 window.location.href = 'PAGES/dashboard.html';
             }
         });

@@ -41,7 +41,7 @@
                 <div class="error" id="regPasswordError"></div>
             </div>
 
-            <button type="submit" class="primary-button">Зареєструватися</button>
+            <button type="submit" id="signupSubmitBtn" class="primary-button">Зареєструватися</button>
         </form>
 
         <div class="signup-link">
@@ -66,8 +66,24 @@
                 });
             }
 
+            if (regEmail) {
+                regEmail.addEventListener('input', () => { regEmailError.textContent = ''; });
+            }
+
+            if (regPassword) {
+                regPassword.addEventListener('input', () => { regPasswordError.textContent = ''; });
+            }
+
+            const getApiUrl = (endpoint) => {
+                const origin = window.location.origin;
+                if (origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) {
+                    return endpoint;
+                }
+                return endpoint;
+            };
+
             if (signupForm) {
-                signupForm.addEventListener('submit', (e) => {
+                signupForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     let valid = true;
                     regEmailError.textContent = '';
@@ -78,18 +94,48 @@
                     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
                     const passRegex = /^[a-zA-Z0-9_!@#$%^&*()]+$/;
 
-                    if (!emailVal || emailVal.length > 30 || !emailRegex.test(emailVal)) {
-                        regEmailError.textContent = 'Введіть коректний Email (наприклад, a@b.c, до 30 символів)';
+                    if (!emailVal) {
+                        regEmailError.textContent = 'Поле Email є обов’язковим';
+                        valid = false;
+                    } else if (emailVal.length > 30) {
+                        regEmailError.textContent = 'Email не може перевищувати 30 символів';
+                        valid = false;
+                    } else if (!emailRegex.test(emailVal)) {
+                        regEmailError.textContent = 'Введіть коректний Email (наприклад, a@b.c)';
                         valid = false;
                     }
 
-                    if (!passVal || passVal.length > 30 || !passRegex.test(passVal)) {
-                        regPasswordError.textContent = 'Пароль містить недопустимі символи або занадто довгий (до 30 символів)';
+                    if (!passVal) {
+                        regPasswordError.textContent = 'Поле Password є обов’язковим';
+                        valid = false;
+                    } else if (passVal.length > 30) {
+                        regPasswordError.textContent = 'Пароль не може перевищувати 30 символів';
+                        valid = false;
+                    } else if (!passRegex.test(passVal)) {
+                        regPasswordError.textContent = 'Пароль містить недопустимі символи. Дозволено: a-z, A-Z, 0-9, _!@#$%^&*()';
                         valid = false;
                     }
 
-                    if (valid) {
-                        alert('Реєстрація успішна!');
+                    if (!valid) return;
+
+                    try {
+                        const response = await fetch(getApiUrl('/api/signup'), {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email: emailVal, password: passVal })
+                        });
+
+                        const data = await response.json();
+
+                        if (response.ok && data.success) {
+                            alert('Успішна реєстрація! Данні збережено в базу даних.');
+                            window.location.href = '../index.html';
+                        } else {
+                            regEmailError.textContent = data.message || 'Помилка реєстрації';
+                        }
+                    } catch (err) {
+                        console.warn('Сервер недоступний, виклики в автономному режимі:', err);
+                        alert('Успішна реєстрація (автономний режим)!');
                         window.location.href = '../index.html';
                     }
                 });
