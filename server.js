@@ -1,8 +1,7 @@
-// server.js - Node.js Express Backend with SQLite Database
+// server.js - Universal Node.js Express Backend with Fail-Safe Cross-Platform Database
 
 const express = require('express');
 const cors = require('cors');
-const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 
@@ -14,41 +13,133 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
-// Инициализация базы данных SQLite
-const dbPath = path.join(__dirname, 'database.sqlite');
-const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-        console.error('Ошибка подключения к базe данных SQLite:', err.message);
-    } else {
-        console.log('Подключено к базе данных SQLite:', dbPath);
-    }
-});
+// === ДРАЙВЕР БАЗИ ДАНИХ (УНІВЕРСАЛЬНИЙ КРОС-ПЛАТФОРМЕНИЙ) ===
+let dbMode = 'sqlite';
+let sqliteDb = null;
+const jsonDbPath = path.join(__dirname, 'database.json');
+const sqliteDbPath = path.join(__dirname, 'database.sqlite');
 
-// Создание таблицы пользователей, если она не существует
-db.run(`
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        email TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-`, (err) => {
-    if (err) {
-        console.error('Ошибка создания таблицы users:', err.message);
-    } else {
-        console.log('Таблица users готова.');
+// Спроба підключити SQLite з автоматичним фолбеком на JSON File DB для Render/Linux
+try {
+    const sqlite3 = require('sqlite3').verbose();
+    sqliteDb = new sqlite3.Database(sqliteDbPath, (err) => {
+        if (err) {
+            console.warn('[БД] SQLite недоступна, перехід на JSON Database Engine:', err.message);
+            dbMode = 'json';
+        } else {
+            console.log('[БД] Успішно підключено SQLite базу даних.');
+            sqliteDb.run(`
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    email TEXT UNIQUE NOT NULL,
+                    password TEXT NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+        }
+    });
+} catch (e) {
+    console.warn('[БД] Нативні бінарники SQLite3 не завантажилися (ERR_DLOPEN_FAILED на Render/Linux).');
+    console.log('[БД] Автоматичний перехід на вбудований безпомилковий JSON Database Engine!');
+    dbMode = 'json';
+}
+
+// Ініціалізація JSON БД при відсутності файлу
+if (!fs.existsSync(jsonDbPath)) {
+    fs.writeFileSync(jsonDbPath, JSON.stringify([], null, 2));
+}
+
+// Допоміжні функції роботи з базою даних
+const readJsonUsers = () => {
+    try {
+        const data = fs.readFileSync(jsonDbPath, 'utf8');
+        return JSON.parse(data || '[]');
+    } catch {
+        return [];
     }
-});
+};
+
+const writeJsonUsers = (users) => {
+    fs.writeFileSync(jsonDbPath, JSON.stringify(users, null, 2));
+};
+
+// Операція додавання користувача
+const dbAddUser = (email, password) => {
+    return new Promise((resolve, reject) => {
+        if (dbMode === 'sqlite' && sqliteDb) {
+            const sql = 'INSERT INTO users (email, password) VALUES (?, ?)';
+            sqliteDb.run(sql, [email, password], function(err) {
+                if (err) {
+                    if (err.message.includes('UNIQUE constraint failed')) {
+                        return reject({ code: 'DUPLICATE', message: 'Користувач з таким Email вже існує.' });
+                    }
+                    return reject({ code: 'ERROR', message: err.message });
+                }
+                resolve({ id: this.lastID, email, created_at: new Date().toISOString() });
+            });
+        } else {
+            // JSON DB Mode
+            const users = readJsonUsers();
+            const exists = users.some(u => u.email.toLowerCase() === email.toLowerCase());
+            if (exists) {
+                return reject({ code: 'DUPLICATE', message: 'Користувач з таким Email вже існує в базі даних.' });
+            }
+            const newUser = {
+                id: users.length + 1,
+                email,
+                password,
+                created_at: new Date().toISOString()
+            };
+            users.push(newUser);
+            writeJsonUsers(users);
+            resolve(newUser);
+        }
+    });
+};
+
+// Операція пошуку користувача для входу
+const dbFindUser = (email, password) => {
+    return new Promise((resolve, reject) => {
+        if (dbMode === 'sqlite' && sqliteDb) {
+            const sql = 'SELECT * FROM users WHERE email = ? AND password = ?';
+            sqliteDb.get(sql, [email, password], (err, row) => {
+                if (err) return reject(err);
+                resolve(row);
+            });
+        } else {
+            // JSON DB Mode
+            const users = readJsonUsers();
+            const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
+            resolve(user || null);
+        }
+    });
+};
+
+// Операція отримання списку користувачів (для QA)
+const dbGetAllUsers = () => {
+    return new Promise((resolve, reject) => {
+        if (dbMode === 'sqlite' && sqliteDb) {
+            sqliteDb.all('SELECT id, email, created_at FROM users', [], (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows);
+            });
+        } else {
+            const users = readJsonUsers();
+            const safeUsers = users.map(({ id, email, created_at }) => ({ id, email, created_at }));
+            resolve(safeUsers);
+        }
+    });
+};
 
 // === REST API ENDPOINTS ===
 
 // 1. Healthcheck
 app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    res.json({ status: 'ok', dbMode, timestamp: new Date().toISOString() });
 });
 
-// 2. Регистрация нового пользователя (POST /api/signup)
-app.post('/api/signup', (req, res) => {
+// 2. Реєстрація (POST /api/signup)
+app.post('/api/signup', async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -58,40 +149,34 @@ app.post('/api/signup', (req, res) => {
     const emailVal = email.trim();
     const passwordVal = password.trim();
 
-    // Валидация Email (a@b.c, макс 30)
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (emailVal.length > 30 || !emailRegex.test(emailVal)) {
         return res.status(400).json({ success: false, message: 'Некоректний Email (наприклад, a@b.c, до 30 символів).' });
     }
 
-    // Валидация Password (макс 30, спецсимволы)
     const passwordRegex = /^[a-zA-Z0-9_!@#$%^&*()]+$/;
     if (passwordVal.length > 30 || !passwordRegex.test(passwordVal)) {
         return res.status(400).json({ success: false, message: 'Некоректний пароль (до 30 символів, дозволено: a-z, A-Z, 0-9, _!@#$%^&*()).' });
     }
 
-    // Вставка в базу данных
-    const sql = 'INSERT INTO users (email, password) VALUES (?, ?)';
-    db.run(sql, [emailVal, passwordVal], function(err) {
-        if (err) {
-            if (err.message.includes('UNIQUE constraint failed')) {
-                return res.status(409).json({ success: false, message: 'Користувач з таким Email вже існує в базі даних.' });
-            }
-            console.error('Ошибка записи в БД:', err.message);
-            return res.status(500).json({ success: false, message: 'Помилка сервера при збереженні в базу даних.' });
-        }
-
-        console.log(`[БД] Зареєстровано нового користувача: ID ${this.lastID}, Email: ${emailVal}`);
+    try {
+        const user = await dbAddUser(emailVal, passwordVal);
+        console.log(`[БД] Зареєстровано користувача (${dbMode}):`, emailVal);
         res.status(201).json({
             success: true,
             message: 'Реєстрація успішна! Користувача збережено в базу даних.',
-            userId: this.lastID
+            userId: user.id
         });
-    });
+    } catch (err) {
+        if (err.code === 'DUPLICATE') {
+            return res.status(409).json({ success: false, message: err.message });
+        }
+        res.status(500).json({ success: false, message: 'Помилка сервера при збереженні.' });
+    }
 });
 
-// 3. Авторизация пользователя (POST /api/login)
-app.post('/api/login', (req, res) => {
+// 3. Авторизація (POST /api/login)
+app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -101,37 +186,34 @@ app.post('/api/login', (req, res) => {
     const emailVal = email.trim();
     const passwordVal = password.trim();
 
-    const sql = 'SELECT * FROM users WHERE email = ? AND password = ?';
-    db.get(sql, [emailVal, passwordVal], (err, user) => {
-        if (err) {
-            console.error('Ошибка чтения из БД:', err.message);
-            return res.status(500).json({ success: false, message: 'Помилка сервера при перевірці даних.' });
-        }
-
+    try {
+        const user = await dbFindUser(emailVal, passwordVal);
         if (!user) {
             return res.status(401).json({ success: false, message: 'Невірний Email або Password.' });
         }
 
-        console.log(`[БД] Успішний вхід користувача: Email ${emailVal}`);
+        console.log(`[БД] Успішний вхід (${dbMode}):`, emailVal);
         res.json({
             success: true,
             message: 'Вхід успішний!',
             user: { id: user.id, email: user.email, created_at: user.created_at }
         });
-    });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Помилка сервера при перевірці даних.' });
+    }
 });
 
-// 4. Список пользователей для QA тестов (GET /api/users)
-app.get('/api/users', (req, res) => {
-    db.all('SELECT id, email, created_at FROM users', [], (err, rows) => {
-        if (err) {
-            return res.status(500).json({ success: false, message: err.message });
-        }
-        res.json({ success: true, count: rows.length, users: rows });
-    });
+// 4. QA Список користувачів (GET /api/users)
+app.get('/api/users', async (req, res) => {
+    try {
+        const users = await dbGetAllUsers();
+        res.json({ success: true, count: users.length, dbEngine: dbMode, users });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
 });
 
-// Главный роут для SPA
+// SPA Фолбек
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -139,8 +221,7 @@ app.get('*', (req, res) => {
 // Запуск сервера
 app.listen(PORT, () => {
     console.log(`===================================================`);
-    console.log(` Сервер та База Даних запущені успішно!`);
-    console.log(` URL: http://localhost:${PORT}`);
-    console.log(` QA API Список користувачів: http://localhost:${PORT}/api/users`);
+    console.log(` Сервер запущен успішно на порту ${PORT}!`);
+    console.log(` Базовий двигун БД: ${dbMode.toUpperCase()}`);
     console.log(`===================================================`);
 });
