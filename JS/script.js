@@ -1,122 +1,89 @@
-// script.js
+// JS/script.js
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Отримання посилань на DOM-елементи
     const loginForm = document.getElementById('loginForm');
     const emailInput = document.getElementById('email');
     const passwordInput = document.getElementById('password');
-    const togglePasswordButton = document.getElementById('togglePassword');
-    const signupLink = document.getElementById('signupLink');
+    const togglePasswordBtn = document.getElementById('togglePassword');
     const emailError = document.getElementById('emailError');
     const passwordError = document.getElementById('passwordError');
-    const messageBox = document.getElementById('messageBox');
-    const messageTitle = document.getElementById('messageTitle');
-    const messageText = document.getElementById('messageText');
-    const messageCloseBtn = document.getElementById('messageCloseBtn');
+    const signUpLink = document.getElementById('signUpLink');
 
-    /**
-     * Показує кастомне вікно повідомлення.
-     * Використовується для виведення помилок валідації на поточній сторінці.
-     * @param {string} title - Заголовок повідомлення.
-     * @param {string} message - Текст повідомлення.
-     */
-    const showMessageBox = (title, message) => {
-        messageTitle.textContent = title;
-        messageText.textContent = message;
-        messageBox.classList.remove('hidden');
-    };
+    // Перемикач маскування/демаскування паролю
+    if (togglePasswordBtn && passwordInput) {
+        togglePasswordBtn.addEventListener('click', () => {
+            const isPassword = passwordInput.getAttribute('type') === 'password';
+            passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+            togglePasswordBtn.textContent = isPassword ? 'Hide' : 'Show';
+        });
+    }
 
-    /**
-     * Приховує кастомне вікно повідомлення.
-     */
-    const hideMessageBox = () => {
-        messageBox.classList.add('hidden');
-    };
+    // Валідація полів під час введення (приховування помилок)
+    if (emailInput) {
+        emailInput.addEventListener('input', () => {
+            emailError.textContent = '';
+        });
+    }
 
-    // Обробник події для кнопки закриття повідомлення
-    messageCloseBtn.addEventListener('click', hideMessageBox);
+    if (passwordInput) {
+        passwordInput.addEventListener('input', () => {
+            passwordError.textContent = '';
+        });
+    }
 
-    // Функція валідації Email
-    const validateEmail = (email) => {
-        // Регулярний вираз для перевірки формату a@b.c
-        const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-        if (!emailPattern.test(email)) {
-            emailError.textContent = 'Будь ласка, введіть дійсну адресу електронної пошти (наприклад, a@b.c).';
-            emailError.classList.remove('hidden');
-            return false;
-        }
-        if (email.length > 64) {
-            emailError.textContent = 'Email не може перевищувати 64 символи.';
-            emailError.classList.remove('hidden');
-            return false;
-        }
-        emailError.classList.add('hidden');
-        return true;
-    };
+    // Обробка посилання Sign Up
+    if (signUpLink) {
+        signUpLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = 'PAGES/signup.html';
+        });
+    }
 
-    // Функція валідації Password
-    const validatePassword = (password) => {
-        // Регулярний вираз для перевірки допустимих символів та максимальної довжини
-        // Літери латинського алфавіту, цифри, _,!,@,#,$,%,^,&,*,(,)
-        const passwordPattern = /^[a-zA-Z0-9_!@#$%^&*()]{1,64}$/;
-        if (!passwordPattern.test(password)) {
-            passwordError.textContent = 'Пароль може містити літери латинського алфавіту, цифри, та символи _!@#$%^&*().';
-            passwordError.classList.remove('hidden');
-            return false;
-        }
-        if (password.length > 64) {
-            passwordError.textContent = 'Пароль не може перевищувати 64 символи.';
-            passwordError.classList.remove('hidden');
-            return false;
-        }
-        passwordError.classList.add('hidden');
-        return true;
-    };
+    // Обробка сабміту форми (кнопка Login)
+    if (loginForm) {
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
 
-    // Обробник події для перемикання видимості пароля
-    togglePasswordButton.addEventListener('click', () => {
-        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-        passwordInput.setAttribute('type', type);
-        togglePasswordButton.textContent = type === 'password' ? 'Показати' : 'Приховати';
-    });
+            let isValid = true;
+            emailError.textContent = '';
+            passwordError.textContent = '';
 
-    // Обробник події для відправки форми (кнопка "Увійти")
-    loginForm.addEventListener('submit', (event) => {
-        event.preventDefault(); // Запобігаємо стандартній відправці форми
+            const emailVal = emailInput.value.trim();
+            const passwordVal = passwordInput.value;
 
-        const email = emailInput.value.trim();
-        const password = passwordInput.value.trim();
+            // 1. Валідація Email
+            // Маска: a@b.c, макс. довжина: 30
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            if (!emailVal) {
+                emailError.textContent = 'Поле Email обов’язкове для заповнення';
+                isValid = false;
+            } else if (emailVal.length > 30) {
+                emailError.textContent = 'Email не може перевищувати 30 символів';
+                isValid = false;
+            } else if (!emailRegex.test(emailVal)) {
+                emailError.textContent = 'Введіть коректний Email (наприклад, a@b.c)';
+                isValid = false;
+            }
 
-        const isEmailValid = validateEmail(email);
-        const isPasswordValid = validatePassword(password);
+            // 2. Валідація Password
+            // Допустимі символи: літери латинського алфавіту, цифри, _,!,@,#,$,%,^,*,(,)
+            // Макс. довжина: 30
+            const passwordRegex = /^[a-zA-Z0-9_!@#$%^&*()]+$/;
+            if (!passwordVal) {
+                passwordError.textContent = 'Поле Password обов’язкове для заповнення';
+                isValid = false;
+            } else if (passwordVal.length > 30) {
+                passwordError.textContent = 'Пароль не може перевищувати 30 символів';
+                isValid = false;
+            } else if (!passwordRegex.test(passwordVal)) {
+                passwordError.textContent = 'Пароль містить недопустимі символи. Дозволено: a-z, A-Z, 0-9, _!@#$%^&*()';
+                isValid = false;
+            }
 
-        if (isEmailValid && isPasswordValid) {
-            // Всі поля заповнені вірно, перенаправляємо на сторінку особистого кабінету
-            window.location.href = 'PAGES/dashboard.html';
-        } else {
-            // Якщо валідація не пройшла, повідомлення про помилки вже відображено в messageBox
-            showMessageBox(
-                'Помилка входу',
-                'Будь ласка, перевірте правильність введених даних.'
-            );
-        }
-    });
-
-    // Обробник події для посилання "Зареєструватися"
-    signupLink.addEventListener('click', (event) => {
-        event.preventDefault(); // Запобігаємо стандартній поведінці посилання
-        // Перенаправляємо на сторінку реєстрації
-        window.location.href = 'PAGES/signup.html';
-    });
-
-    // Додаємо слухачів подій `input` для полів, щоб приховувати помилки під час введення
-    emailInput.addEventListener('input', () => {
-        emailError.classList.add('hidden');
-        hideMessageBox(); // Приховуємо загальне повідомлення про помилку під час введення
-    });
-
-    passwordInput.addEventListener('input', () => {
-        passwordError.classList.add('hidden');
-        hideMessageBox(); // Приховуємо загальне повідомлення про помилку під час введення
-    });
+            // 3. Успішна валідація -> перехід до особистого кабінету
+            if (isValid) {
+                window.location.href = 'PAGES/dashboard.html';
+            }
+        });
+    }
 });

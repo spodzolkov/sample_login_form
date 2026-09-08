@@ -3,83 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Реєстрація в QA Manual</title>
-    <!-- Підключення Tailwind CSS CDN (залишаємо для базових утиліт, які не в style.css) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Підключення нашого файлу стилів -->
+    <title>Реєстрація - QA Manual 19.09.2024</title>
     <link rel="stylesheet" href="../CSS/style.css">
-    <!-- Шрифт Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-    </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4 sm:p-6 md:p-8">
+<body>
     <div class="card-container">
-        <div class="text-center mb-8">
-            <h1 class="page-title">Реєстрація</h1>
-        </div>
+        <div class="logo">QA Manual 19.09.2024</div>
+        <h2 style="text-align: center; margin-bottom: 20px; font-size: 18px; color: #ffffff;">Реєстрація користувача</h2>
 
-        <form class="space-y-6">
-            <!-- Поле для Email -->
-            <div>
-                <label for="regEmail" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+        <form id="signupForm" novalidate>
+            <div class="input-group">
+                <label for="regEmail">Email</label>
                 <input
                     type="email"
                     id="regEmail"
                     name="regEmail"
-                    placeholder="example@domain.com"
-                    required
-                    class="form-input"
+                    maxlength="30"
+                    placeholder="Введіть Email"
+                    autocomplete="off"
                 >
+                <div class="error" id="regEmailError"></div>
             </div>
 
-            <!-- Поле для Password -->
-            <div>
-                <label for="regPassword" class="block text-sm font-medium text-gray-700 mb-1">Пароль</label>
-                <input
-                    type="password"
-                    id="regPassword"
-                    name="regPassword"
-                    placeholder="Придумайте пароль"
-                    required
-                    class="form-input"
-                >
+            <div class="input-group">
+                <label for="regPassword">Password</label>
+                <div class="password-wrapper">
+                    <input
+                        type="password"
+                        id="regPassword"
+                        name="regPassword"
+                        maxlength="30"
+                        placeholder="Придумайте пароль"
+                        autocomplete="off"
+                    >
+                    <button type="button" id="toggleRegPassword" class="toggle-password">Show</button>
+                </div>
+                <div class="error" id="regPasswordError"></div>
             </div>
 
-            <!-- Поле для Confirm Password -->
-            <div>
-                <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1">Підтвердіть пароль</label>
-                <input
-                    type="password"
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    placeholder="Повторіть пароль"
-                    required
-                    class="form-input"
-                >
-            </div>
-
-            <!-- Кнопка Реєстрації -->
-            <div>
-                <button
-                    type="submit"
-                    class="primary-button"
-                >
-                    Зареєструватися
-                </button>
-            </div>
+            <button type="submit" class="primary-button">Зареєструватися</button>
         </form>
 
-        <!-- Посилання Назад до входу -->
-        <div class="mt-6 text-center">
-            <p class="text-sm text-gray-600">
-                Вже маєте обліковий запис?
-                <a href="../index.html" class="form-link">Увійти</a>
-            </p>
+        <div class="signup-link">
+            <a href="../index.html" class="form-link">Вже є акаунт? Увійти</a>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggleRegPassword = document.getElementById('toggleRegPassword');
+            const regPassword = document.getElementById('regPassword');
+            const signupForm = document.getElementById('signupForm');
+            const regEmail = document.getElementById('regEmail');
+            const regEmailError = document.getElementById('regEmailError');
+            const regPasswordError = document.getElementById('regPasswordError');
+
+            if (toggleRegPassword && regPassword) {
+                toggleRegPassword.addEventListener('click', () => {
+                    const isPass = regPassword.getAttribute('type') === 'password';
+                    regPassword.setAttribute('type', isPass ? 'text' : 'password');
+                    toggleRegPassword.textContent = isPass ? 'Hide' : 'Show';
+                });
+            }
+
+            if (signupForm) {
+                signupForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    let valid = true;
+                    regEmailError.textContent = '';
+                    regPasswordError.textContent = '';
+
+                    const emailVal = regEmail.value.trim();
+                    const passVal = regPassword.value;
+                    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+                    const passRegex = /^[a-zA-Z0-9_!@#$%^&*()]+$/;
+
+                    if (!emailVal || emailVal.length > 30 || !emailRegex.test(emailVal)) {
+                        regEmailError.textContent = 'Введіть коректний Email (наприклад, a@b.c, до 30 символів)';
+                        valid = false;
+                    }
+
+                    if (!passVal || passVal.length > 30 || !passRegex.test(passVal)) {
+                        regPasswordError.textContent = 'Пароль містить недопустимі символи або занадто довгий (до 30 символів)';
+                        valid = false;
+                    }
+
+                    if (valid) {
+                        alert('Реєстрація успішна!');
+                        window.location.href = '../index.html';
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>
