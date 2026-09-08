@@ -1,4 +1,4 @@
-// JS/script.js
+// JS/script.js - Версія з навмисно доданими 5 дефектами для QA тестування
 
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
@@ -9,19 +9,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const passwordError = document.getElementById('passwordError');
     const signUpLink = document.getElementById('signUpLink');
 
-    // Перемикач маскування/демаскування паролю
+    // ДЕФЕКТ 1: Кнопка приховання/відображення паролю працює навпаки
     if (togglePasswordBtn && passwordInput) {
         togglePasswordBtn.addEventListener('click', () => {
             const isPassword = passwordInput.getAttribute('type') === 'password';
             passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
-            togglePasswordBtn.textContent = isPassword ? 'Hide' : 'Show';
+            // НАВПАКИ: коли пароль відкритий (text) -> пише Show, коли прихований (password) -> пише Hide
+            togglePasswordBtn.textContent = isPassword ? 'Show' : 'Hide';
         });
     }
 
-    // Приховувати помилки під час введення
     if (emailInput) {
         emailInput.addEventListener('input', () => {
             emailError.textContent = '';
+            passwordError.textContent = '';
         });
     }
 
@@ -31,25 +32,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Перехід за посиланням Sign Up
+    // ДЕФЕКТ 4: Перенаправлення Sign Up веде на саму сторінку входу замість сторінки реєстрації
     if (signUpLink) {
         signUpLink.addEventListener('click', (e) => {
             e.preventDefault();
-            window.location.href = 'PAGES/signup.html';
+            window.location.href = 'index.html'; // Помилковий редирект
         });
     }
 
-    // Визначення адреси API (підтримка роботи локально та на віддаленому сервері)
     const getApiUrl = (endpoint) => {
-        const origin = window.location.origin;
-        if (origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) {
-            return endpoint; // Прямий відносний шлях для локального сервера Node.js
-        }
-        // За замовчуванням звертаємося до поточного хоста або локального сервера
         return endpoint;
     };
 
-    // Обробка входу (Login)
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -61,26 +55,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const emailVal = emailInput.value.trim();
             const passwordVal = passwordInput.value;
 
-            // 1. Клієнтська валідація Email
-            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            // ДЕФЕКТ 2: Зламаний регулярний вираз для Email (пропускає невалідні адреси без TLD домену, наприклад "user@domain")
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+$/; // Відсутня перевірка \.[a-zA-Z]{2,}
+            
             if (!emailVal) {
-                emailError.textContent = 'Поле Email обов’язкове для заповнення';
-                isValid = false;
-            } else if (emailVal.length > 30) {
-                emailError.textContent = 'Email не може перевищувати 30 символів';
+                // ДЕФЕКТ 5: Помилка Email виводиться у блок passwordError під полем Пароля замість emailError
+                passwordError.textContent = 'Поле Email обов’язкове для заповнення';
                 isValid = false;
             } else if (!emailRegex.test(emailVal)) {
-                emailError.textContent = 'Введіть коректний Email (наприклад, a@b.c)';
+                // ДЕФЕКТ 5: Виведення помилки Email в невірний блок
+                passwordError.textContent = 'Введіть коректний Email (наприклад, a@b.c)';
                 isValid = false;
             }
 
-            // 2. Клієнтська валідація Password
+            // Валідація Password
             const passwordRegex = /^[a-zA-Z0-9_!@#$%^&*()]+$/;
             if (!passwordVal) {
                 passwordError.textContent = 'Поле Password обов’язкове для заповнення';
-                isValid = false;
-            } else if (passwordVal.length > 30) {
-                passwordError.textContent = 'Пароль не може перевищувати 30 символів';
                 isValid = false;
             } else if (!passwordRegex.test(passwordVal)) {
                 passwordError.textContent = 'Пароль містить недопустимі символи. Дозволено: a-z, A-Z, 0-9, _!@#$%^&*()';
@@ -89,7 +80,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!isValid) return;
 
-            // 3. Відправка запиту на сервер / у базу даних
             try {
                 const response = await fetch(getApiUrl('/api/login'), {
                     method: 'POST',
@@ -100,15 +90,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    // Зберігаємо сесію та переходимо у кабінет
                     sessionStorage.setItem('currentUser', JSON.stringify(data.user));
                     window.location.href = 'PAGES/dashboard.html';
                 } else {
                     passwordError.textContent = data.message || 'Невірний Email або пароль.';
                 }
             } catch (err) {
-                console.warn('Сервер недоступний, використовується автономний режим:', err);
-                // Автономний фолбек для перевірки при статичному відкритті через file://
+                console.warn('Автономний режим:', err);
                 window.location.href = 'PAGES/dashboard.html';
             }
         });

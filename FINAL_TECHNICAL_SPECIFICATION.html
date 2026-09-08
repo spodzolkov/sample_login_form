@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Ітогове Технічне Завдання — QA Manual 19.09.2024</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 950px; margin: 40px auto; padding: 0 24px; color: #1f2937; line-height: 1.6; background-color: #f9fafb; }
+        .doc-container { background: #ffffff; padding: 40px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #e5e7eb; }
+        h1 { font-size: 2.1em; border-bottom: 3px solid #0055ff; padding-bottom: 10px; color: #111827; margin-top: 0; }
+        h2 { font-size: 1.45em; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; color: #1e293b; margin-top: 28px; }
+        h3 { font-size: 1.15em; color: #334155; margin-top: 20px; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; font-size: 14px; }
+        th, td { border: 1px solid #cbd5e1; padding: 10px 12px; text-align: left; }
+        th { background: #f1f5f9; font-weight: 600; color: #0f172a; }
+        tr:nth-child(even) { background: #f8fafc; }
+        code { background: #f1f5f9; color: #0f172a; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.9em; }
+        pre { background: #1e293b; color: #f8fafc; padding: 16px; border-radius: 6px; overflow-x: auto; font-family: monospace; }
+        pre code { background: none; color: inherit; padding: 0; }
+    </style>
+</head>
+<body><div class="doc-container"><h1>Ітогове Технічне Завдання (ТЗ) — Веб-застосунок входу та реєстрації "QA Manual 19.09.2024"</h1>
+<h2>1. Загальні відомості про проєкт</h2>
+<ul>
+<li><strong>Назва проєкту:</strong> Веб-застосунок входу та реєстрації користувача (Login Form &amp; Registration Module).</li>
+<li><strong>Брендінг та Логотип:</strong> <code>QA Manual 19.09.2024</code></li>
+<li><strong>Призначення:</strong> Веб-модуль для авторизації, реєстрації та перевірки даних користувачів з підтримкою клієнтської і серверної валідації, збереженням даних у базі даних (SQLite / JSON) та перевіркою QA (Boundary Value Analysis / Equivalence Partitioning).</li>
+<li><strong>Технологічний стек:</strong></li>
+<li><strong>Frontend:</strong> HTML5, Vanilla CSS3 (Dark Theme), ES6+ JavaScript, Responsive Media Queries.</li>
+<li><strong>Backend:</strong> Node.js, Express.js (REST API).</li>
+<li><strong>Database:</strong> SQLite3 з універсальним фолбеком на вбудований JSON File DB (для підтримки cross-platform деплою на Render, Linux, Windows, macOS).</li>
+</ul>
+<hr />
+<h2>2. Порівняльний аналіз початкового ТЗ (Google Doc) та Реалізації</h2>
+<table>
+<thead>
+<tr>
+<th>№</th>
+<th>Початкова вимога з ТЗ (Google Doc)</th>
+<th style="text-align: center;">Статус реалізації</th>
+<th>Деталі підсумкової реалізації</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1</strong></td>
+<td>Сторінка входу за макетом <code>https://codepen.io/Podzolkov/pen/ExqXayo</code></td>
+<td style="text-align: center;">✅ Реалізовано</td>
+<td>Точне відтворення темної теми (<code>#1e1e1e</code> body, <code>#2e2e2e</code> container, <code>#3c3c3c</code> inputs, <code>#0055ff</code> primary button).</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td>Відповідність макету та стилям</td>
+<td style="text-align: center;">✅ Реалізовано</td>
+<td>Шрифти Arial/Sans-serif, правильні відступи, ховер-ефекти, повідомлення про помилки під полями.</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td>Адаптивний дизайн (масштабування вікна браузера)</td>
+<td style="text-align: center;">✅ Реалізовано</td>
+<td><code>width: 100%</code>, <code>max-width: 400px</code>, флекс-центрування, динамічні розміри.</td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td>Коректне масштабування у мобільній версії</td>
+<td style="text-align: center;">✅ Реалізовано</td>
+<td>Viewport meta, медіазапит <code>@media (max-width: 768px)</code> зі зменшеними відступами та адаптивними кнопками.</td>
+</tr>
+<tr>
+<td><strong>5</strong></td>
+<td>Наявність логотипу “QA Manual 19.09.2024”</td>
+<td style="text-align: center;">✅ Реалізовано</td>
+<td>Заголовок у блоці логотипу з текстом <code>QA Manual 19.09.2024</code> на сторінках Входу, Реєстрації та Кабінету.</td>
+</tr>
+<tr>
+<td><strong>6</strong></td>
+<td>Поле Email (max 30 симв., маска <code>a@b.c</code>, редагування, ховер)</td>
+<td style="text-align: center;">✅ Реалізовано</td>
+<td><code>maxlength="30"</code>, regex <code>^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$</code>, плавній ховер/фокус ефект.</td>
+</tr>
+<tr>
+<td><strong>7</strong></td>
+<td>Поле Password (max 30 симв., маскування, дозволені символи, кнопка Show/Hide, редагування, ховер)</td>
+<td style="text-align: center;">✅ Реалізовано</td>
+<td><code>maxlength="30"</code>, <code>type="password"</code>, regex <code>^[a-zA-Z0-9_!@#$%^&amp;*()]+$</code>, кнопка <code>Show</code>/<code>Hide</code>, ховер-ефект.</td>
+</tr>
+<tr>
+<td><strong>8</strong></td>
+<td>Кнопка Login (ховер, валідація, відкриття кабінету)</td>
+<td style="text-align: center;">✅ Реалізовано</td>
+<td>Ховер <code>:hover</code> (<code>#0044cc</code>), перевірка полів, POST запит на API, редирект на <code>PAGES/dashboard.html</code>.</td>
+</tr>
+<tr>
+<td><strong>9</strong></td>
+<td>Посилання Sign Up (ховер, відкриття сторінки реєстрації)</td>
+<td style="text-align: center;">✅ Реалізовано</td>
+<td>Ховер <code>:hover</code> (<code>#0055ff</code>), редирект на <code>PAGES/signup.html</code>.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>3. Функціональні вимоги до веб-інтерфейсу (Frontend)</h2>
+<h3>3.1. Головна сторінка входу (<code>index.html</code>)</h3>
+<ol>
+<li><strong>Логотип:</strong> Текст <code>QA Manual 19.09.2024</code>, вирівняний по центру, розмір <code>20px</code>, колір <code>#ffffff</code>.</li>
+<li><strong>Поле <code>Email</code>:</strong></li>
+<li>Поле типу <code>email</code>, обов'язкове для заповнення (<code>required</code>).</li>
+<li><code>maxlength="30"</code> (жорстке обмеження на рівні HTML та JavaScript).</li>
+<li>Плейсхолдер: <code>Введіть Email</code>.</li>
+<li>Маска формату: <code>a@b.c</code> (наприклад, <code>user@domain.com</code>).</li>
+<li>Плавний ховер-ефект (зміна рамки з <code>#444</code> на <code>#666</code> та фону з <code>#3c3c3c</code> на <code>#444</code>).</li>
+<li>Виведення помилок у червоний блок під полем (<code>#emailError</code>, колір <code>#ff3333</code>).</li>
+<li><strong>Поле <code>Password</code>:</strong></li>
+<li>Поле типу <code>password</code>, обов'язкове для заповнення (<code>required</code>).</li>
+<li><code>maxlength="30"</code>.</li>
+<li>Плейсхолдер: <code>Введіть Password</code>.</li>
+<li>Дозволені символи: латиниця (<code>a-z</code>, <code>A-Z</code>), цифри (<code>0-9</code>), а також символи <code>_</code>, <code>!</code>, <code>@</code>, <code>#</code>, <code>$</code>, <code>%</code>, <code>^</code>, <code>*</code>, <code>(</code>, <code>)</code>. Пробіли та кирилиця заборонені.</li>
+<li>Інтерактивна кнопка перемикання видимості (<code>#togglePassword</code>):<ul>
+<li>Початковий стан: тип <code>password</code>, текст кнопки <code>Show</code>.</li>
+<li>Натиснутий стан: тип <code>text</code>, текст кнопки <code>Hide</code>.</li>
+</ul>
+</li>
+<li>Виведення помилок у червоний блок під полем (<code>#passwordError</code>).</li>
+<li><strong>Кнопка <code>Login</code> (<code>#loginBtn</code>):</strong></li>
+<li>Колір фону <code>#0055ff</code>, колір тексту <code>#ffffff</code>, шрифт <code>15px bold</code>.</li>
+<li>Ховер-ефект: зміна фону на <code>#0044cc</code>.</li>
+<li>При натисканні: виконується клієнтська валідація полів та відправляється <code>POST /api/login</code>.</li>
+<li>При успішному відповіді від сервера — зберігається сесія та здійснюється редирект у кабінет <code>PAGES/dashboard.html</code>.</li>
+<li><strong>Посилання <code>Sign Up</code> (<code>#signUpLink</code>):</strong></li>
+<li>Колір <code>#888888</code>.</li>
+<li>Ховер-ефект: зміна кольору на <code>#0055ff</code> та підкреслення <code>underline</code>.</li>
+<li>При натисканні: перехід на сторінку реєстрації <code>PAGES/signup.html</code>.</li>
+</ol>
+<h3>3.2. Сторінка реєстрації (<code>PAGES/signup.html</code>)</h3>
+<ul>
+<li>Повторює темний дизайн та логотип <code>QA Manual 19.09.2024</code>.</li>
+<li>Містить поля <code>regEmail</code>, <code>regPassword</code> з аналогічними валідаційними обмеженнями (max 30 симв., відповідні маски).</li>
+<li>При успішній відправці форми (<code>POST /api/signup</code>) запис зберігається в базу даних, виводиться підтвердження та виконується редирект на вхід.</li>
+</ul>
+<h3>3.3. Сторінка особистого кабінету (<code>PAGES/dashboard.html</code>)</h3>
+<ul>
+<li>Відображає привітальний текст <code>Вітаємо в особистому кабінеті!</code>.</li>
+<li>Містить кнопку <code>Вийти</code>, яка повертає користувача на сторінку входу.</li>
+</ul>
+<hr />
+<h2>4. Специфікація Бекенду та Бази Даних (Backend REST API)</h2>
+<h3>4.1. Схема Бази Даних (<code>users</code>)</h3>
+<p>Таблиця або структура запису користувача містить наступні поля:</p>
+<table>
+<thead>
+<tr>
+<th>Поле</th>
+<th>Тип даних</th>
+<th>Обмеження</th>
+<th>Опис</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>INTEGER</td>
+<td>PRIMARY KEY, AUTOINCREMENT</td>
+<td>Унікальний ідентифікатор користувача</td>
+</tr>
+<tr>
+<td><code>email</code></td>
+<td>TEXT</td>
+<td>UNIQUE, NOT NULL, MAX length 30</td>
+<td>Електронна пошта користувача</td>
+</tr>
+<tr>
+<td><code>password</code></td>
+<td>TEXT</td>
+<td>NOT NULL, MAX length 30</td>
+<td>Пароль користувача</td>
+</tr>
+<tr>
+<td><code>created_at</code></td>
+<td>DATETIME</td>
+<td>DEFAULT CURRENT_TIMESTAMP</td>
+<td>Дата та час реєстрації</td>
+</tr>
+</tbody>
+</table>
+<h3>4.2. Ендпоінти REST API</h3>
+<h4>1. <code>POST /api/signup</code></h4>
+<ul>
+<li><strong>Опис:</strong> Реєстрація нового користувача та збереження в БД.</li>
+<li><strong>Request Body (JSON):</strong>
+  <code>json
+  {
+    "email": "user@example.com",
+    "password": "Password123!"
+  }</code></li>
+<li><strong>Response Success (201 Created):</strong>
+  <code>json
+  {
+    "success": true,
+    "message": "Реєстрація успішна! Користувача збережено в базу даних.",
+    "userId": 1
+  }</code></li>
+<li><strong>Response Conflict (409 Conflict):</strong>
+  <code>json
+  {
+    "success": false,
+    "message": "Користувач з таким Email вже існує в базі даних."
+  }</code></li>
+</ul>
+<h4>2. <code>POST /api/login</code></h4>
+<ul>
+<li><strong>Опис:</strong> Авторизація користувача за поштою та паролем.</li>
+<li><strong>Request Body (JSON):</strong>
+  <code>json
+  {
+    "email": "user@example.com",
+    "password": "Password123!"
+  }</code></li>
+<li><strong>Response Success (200 OK):</strong>
+  <code>json
+  {
+    "success": true,
+    "message": "Вхід успішний!",
+    "user": { "id": 1, "email": "user@example.com", "created_at": "2026-09-08T16:25:00.000Z" }
+  }</code></li>
+<li><strong>Response Unauthorized (401 Unauthorized):</strong>
+  <code>json
+  {
+    "success": false,
+    "message": "Невірний Email або Password."
+  }</code></li>
+</ul>
+<h4>3. <code>GET /api/users</code></h4>
+<ul>
+<li><strong>Опис:</strong> (QA Helper) Отримання списку зареєстрованих користувачів без відкриття паролів.</li>
+<li><strong>Response (200 OK):</strong>
+  <code>json
+  {
+    "success": true,
+    "count": 1,
+    "dbEngine": "sqlite",
+    "users": [
+      { "id": 1, "email": "user@example.com", "created_at": "2026-09-08T16:25:00.000Z" }
+    ]
+  }</code></li>
+</ul>
+<hr />
+<h2>5. Тестова Матриця QA (Boundary Value Analysis &amp; Equivalence Partitioning)</h2>
+<h3>5.1. Класи Еквівалентності (Equivalence Partitioning)</h3>
+<ul>
+<li><strong>Email:</strong></li>
+<li><code>Valid Class (Valid EP)</code>: Рядок формату <code>a@b.c</code>, довжиною від 5 до 30 символів, латинські літери/цифри.</li>
+<li><code>Invalid Class 1 (Format Error)</code>: Без <code>@</code>, без крапки в домені, з пробілами, кирилицею.</li>
+<li><code>Invalid Class 2 (Length Error)</code>: Порожній (0 симв.) або довжиною понад 30 символів.</li>
+<li><strong>Password:</strong></li>
+<li><code>Valid Class (Valid EP)</code>: Довжина від 1 до 30 символів, що містить тільки дозволені символи <code>[a-zA-Z0-9_!@#$%^&amp;*()]</code>.</li>
+<li><code>Invalid Class 1 (Illegal Chars)</code>: Містить пробіли, кирилицю, недозволені спецсимволи (<code>~</code>, <code>&lt;</code>, <code>&gt;</code>, <code>,</code>, <code>"</code>, <code>'</code>, <code>/</code>, <code>\</code>).</li>
+<li><code>Invalid Class 2 (Length Error)</code>: Порожній (0 симв.) або довжиною понад 30 символів.</li>
+</ul>
+<h3>5.2. Матриця Граничних Значень (BVA Test Matrix)</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">TC-ID</th>
+<th>Поле / Параметр</th>
+<th>Граничний стан (Boundary)</th>
+<th>Вхідне значення (Input)</th>
+<th>Очікуваний результат</th>
+<th style="text-align: center;">Клас еквівалентності</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>TC-01</strong></td>
+<td>Email Length</td>
+<td><code>min - 1</code> (0 симв.)</td>
+<td><code>""</code></td>
+<td>Помилка: "Поле Email обов’язкове"</td>
+<td style="text-align: center;">Invalid</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-02</strong></td>
+<td>Email Length</td>
+<td><code>min</code> (5 симв.)</td>
+<td><code>"a@b.c"</code></td>
+<td>Успішна валідація</td>
+<td style="text-align: center;">Valid</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-03</strong></td>
+<td>Email Length</td>
+<td><code>nominal</code> (15 симв.)</td>
+<td><code>"test15@test.com"</code></td>
+<td>Успішна валідація</td>
+<td style="text-align: center;">Valid</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-04</strong></td>
+<td>Email Length</td>
+<td><code>max - 1</code> (29 симв.)</td>
+<td><code>"a1234567890123456789@domain.co"</code></td>
+<td>Успішна валідація</td>
+<td style="text-align: center;">Valid</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-05</strong></td>
+<td>Email Length</td>
+<td><code>max</code> (30 симв.)</td>
+<td><code>"a12345678901234567890@domain.co"</code></td>
+<td>Успішна валідація</td>
+<td style="text-align: center;">Valid</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-06</strong></td>
+<td>Email Length</td>
+<td><code>max + 1</code> (31 симв.)</td>
+<td><code>"a123456789012345678901@domain.co"</code></td>
+<td>Блокування ввода (maxlength=30) / Помилка довжини</td>
+<td style="text-align: center;">Invalid</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-07</strong></td>
+<td>Email Format</td>
+<td>Invalid Format</td>
+<td><code>"invalidemail.com"</code></td>
+<td>Помилка: "Введіть коректний Email"</td>
+<td style="text-align: center;">Invalid</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-08</strong></td>
+<td>Email Format</td>
+<td>Invalid Format</td>
+<td><code>"user@domain"</code></td>
+<td>Помилка: "Введіть коректний Email"</td>
+<td style="text-align: center;">Invalid</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-09</strong></td>
+<td>Password Length</td>
+<td><code>min - 1</code> (0 симв.)</td>
+<td><code>""</code></td>
+<td>Помилка: "Поле Password обов’язкове"</td>
+<td style="text-align: center;">Invalid</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-10</strong></td>
+<td>Password Length</td>
+<td><code>min</code> (1 симв.)</td>
+<td><code>"a"</code></td>
+<td>Успішна валідація</td>
+<td style="text-align: center;">Valid</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-11</strong></td>
+<td>Password Length</td>
+<td><code>max</code> (30 симв.)</td>
+<td><code>"A1!b2@C3#d4$E5%f6^G7*h8(I9)j0"</code></td>
+<td>Успішна валідація</td>
+<td style="text-align: center;">Valid</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-12</strong></td>
+<td>Password Chars</td>
+<td>Special Allowed</td>
+<td><code>"_!@#$%^&amp;*()"</code></td>
+<td>Успішна валідація</td>
+<td style="text-align: center;">Valid</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-13</strong></td>
+<td>Password Chars</td>
+<td>Space (пробіл)</td>
+<td><code>"pass word"</code></td>
+<td>Помилка: "Пароль містить недопустимі символи"</td>
+<td style="text-align: center;">Invalid</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-14</strong></td>
+<td>Password Chars</td>
+<td>Cyrillic (кирилиця)</td>
+<td><code>"Пароль123"</code></td>
+<td>Помилка: "Пароль містить недопустимі символи"</td>
+<td style="text-align: center;">Invalid</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>TC-15</strong></td>
+<td>Password Mask</td>
+<td>Toggle Button</td>
+<td>Клік по <code>Show</code></td>
+<td>Текст паролю демаскується, кнопка змінюється на <code>Hide</code></td>
+<td style="text-align: center;">Valid</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>6. Вимоги до Дизайну, Стилів та Layout (UI/UX)</h2>
+<ul>
+<li><strong>Кольорова палітра:</strong></li>
+<li>Фон сторінки (<code>body</code>): <code>#1e1e1e</code> (темно-сірий).</li>
+<li>Фон контейнера форм (<code>.container</code>): <code>#2e2e2e</code>.</li>
+<li>Фон полів вводу (<code>input</code>): <code>#3c3c3c</code>.</li>
+<li>Колір рамки полів: <code>#444444</code> (ховер: <code>#666666</code>, фокус: <code>#0055ff</code>).</li>
+<li>Колір кнопки <code>Login</code>: <code>#0055ff</code> (ховер: <code>#0044cc</code>).</li>
+<li>Колір помилок (<code>.error</code>): <code>#ff3333</code>.</li>
+<li><strong>Шрифти та відступи:</strong></li>
+<li>Шрифт: <code>Arial, Helvetica, sans-serif</code>.</li>
+<li>Радіус заокруглення полів та контейнерів: <code>4px</code> - <code>8px</code>.</li>
+<li>Відступи в полях: <code>10px 12px</code>.</li>
+<li><strong>Макет інтерфейсу (ASCII Wireframe):</strong>
+  <code>+-------------------------------------------------------+
+  |                                                       |
+  |             +---------------------------+             |
+  |             |   QA Manual 19.09.2024    |             |
+  |             +---------------------------+             |
+  |                                                       |
+  |             Email                                     |
+  |             +---------------------------+             |
+  |             | Введіть Email             |             |
+  |             +---------------------------+             |
+  |             [emailError: red text]                    |
+  |                                                       |
+  |             Password                                  |
+  |             +---------------------+-----+             |
+  |             | Введіть Password    | Show|             |
+  |             +---------------------+-----+             |
+  |             [passwordError: red text]                 |
+  |                                                       |
+  |             +---------------------------+             |
+  |             |          Login            |             |
+  |             +---------------------------+             |
+  |                                                       |
+  |                     Sign Up                           |
+  |                                                       |
+  +-------------------------------------------------------+</code></li>
+</ul>
+<hr />
+<h2>7. Інструкція з Розгортання та Тестування</h2>
+<ol>
+<li>
+<p><strong>Локальний запуск:</strong>
+   <code>bash
+   npm install
+   npm start</code>
+   Доступ у браузері: <code>http://localhost:3000</code></p>
+</li>
+<li>
+<p><strong>Деплой на Render.com / Cloud VPS:</strong></p>
+</li>
+<li>Репозиторій містить <code>.gitignore</code> з виключенням <code>node_modules</code> для уникнення помилок сумісності нативних модулів на Linux.</li>
+<li>Сервер працює з безпомилковим автоперемиканням <code>sqlite3</code> $\rightarrow$ <code>database.json</code>.</li>
+</ol></div></body>
+</html>
