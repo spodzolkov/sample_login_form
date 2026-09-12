@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="uk">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Реєстрація - QA Manual 19.09.2024</title>
     <link rel="stylesheet" href="../CSS/style.css">
 </head>
+
 <body>
     <div class="card-container">
         <div class="logo">QA Manual 19.09.2024</div>
@@ -13,29 +15,15 @@
 
         <form id="signupForm" novalidate>
             <div class="input-group">
-                <label for="regEmail">Email</label>
-                <input
-                    type="email"
-                    id="regEmail"
-                    name="regEmail"
-                    maxlength="30"
-                    placeholder="Введіть Email"
-                    autocomplete="off"
-                >
+                <label for="regEmail">Email:</label>
+                <input type="email" id="regEmail" name="regEmail" maxlength="30" placeholder="Введіть Email" autocomplete="off">
                 <div class="error" id="regEmailError"></div>
             </div>
 
             <div class="input-group">
-                <label for="regPassword">Password</label>
+                <label for="regPassword">Password:</label>
                 <div class="password-wrapper">
-                    <input
-                        type="password"
-                        id="regPassword"
-                        name="regPassword"
-                        maxlength="30"
-                        placeholder="Придумайте пароль"
-                        autocomplete="off"
-                    >
+                    <input type="password" id="regPassword" name="regPassword" maxlength="30" placeholder="Придумайте пароль" autocomplete="off">
                     <button type="button" id="toggleRegPassword" class="toggle-password">Show</button>
                 </div>
                 <div class="error" id="regPasswordError"></div>
@@ -67,11 +55,15 @@
             }
 
             if (regEmail) {
-                regEmail.addEventListener('input', () => { regEmailError.textContent = ''; });
+                regEmail.addEventListener('input', () => {
+                    regEmailError.textContent = '';
+                });
             }
 
             if (regPassword) {
-                regPassword.addEventListener('input', () => { regPasswordError.textContent = ''; });
+                regPassword.addEventListener('input', () => {
+                    regPasswordError.textContent = '';
+                });
             }
 
             const getApiUrl = (endpoint) => {
@@ -83,7 +75,7 @@
             };
 
             if (signupForm) {
-                signupForm.addEventListener('submit', async (e) => {
+                signupForm.addEventListener('submit', async(e) => {
                     e.preventDefault();
                     let valid = true;
                     regEmailError.textContent = '';
@@ -121,8 +113,13 @@
                     try {
                         const response = await fetch(getApiUrl('/api/signup'), {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ email: emailVal, password: passVal })
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                email: emailVal,
+                                password: passVal
+                            })
                         });
 
                         const data = await response.json();
@@ -143,4 +140,5 @@
         });
     </script>
 </body>
+
 </html>

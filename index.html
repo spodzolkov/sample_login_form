@@ -1,40 +1,28 @@
 <!DOCTYPE html>
 <html lang="uk">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QA Manual 19.09.2024 - Вхід</title>
     <link rel="stylesheet" href="CSS/style.css">
 </head>
+
 <body>
     <div class="container">
         <div class="logo">QA Manual 19.09.2024</div>
 
         <form id="loginForm" novalidate>
             <div class="input-group">
-                <label for="email">Email</label>
-                <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    maxlength="30"
-                    placeholder="Введіть Email"
-                    autocomplete="off"
-                >
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" maxlength="30" placeholder="Введіть Email" autocomplete="off">
                 <div class="error" id="emailError"></div>
             </div>
 
             <div class="input-group">
-                <label for="password">Password</label>
+                <label for="password">Password:</label>
                 <div class="password-wrapper">
-                    <input
-                        type="password"
-                        id="password"
-                        name="password"
-                        maxlength="30"
-                        placeholder="Введіть Password"
-                        autocomplete="off"
-                    >
+                    <input type="password" id="password" name="password" maxlength="30" placeholder="Введіть Password" autocomplete="off">
                     <button type="button" id="togglePassword" class="toggle-password">Show</button>
                 </div>
                 <div class="error" id="passwordError"></div>
@@ -50,4 +38,5 @@
 
     <script src="JS/script.js"></script>
 </body>
+
 </html>
