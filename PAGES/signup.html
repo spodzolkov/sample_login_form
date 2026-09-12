@@ -29,6 +29,15 @@
                 <div class="error" id="regPasswordError"></div>
             </div>
 
+            <div class="input-group">
+                <label for="regConfirmPassword">Confirm Password:</label>
+                <div class="password-wrapper">
+                    <input type="password" id="regConfirmPassword" name="regConfirmPassword" maxlength="30" placeholder="Підтвердіть пароль" autocomplete="off">
+                    <button type="button" id="toggleRegConfirmPassword" class="toggle-password">Show</button>
+                </div>
+                <div class="error" id="regConfirmPasswordError"></div>
+            </div>
+
             <button type="submit" id="signupSubmitBtn" class="primary-button">Зареєструватися</button>
         </form>
 
@@ -41,16 +50,27 @@
         document.addEventListener('DOMContentLoaded', () => {
             const toggleRegPassword = document.getElementById('toggleRegPassword');
             const regPassword = document.getElementById('regPassword');
+            const toggleRegConfirmPassword = document.getElementById('toggleRegConfirmPassword');
+            const regConfirmPassword = document.getElementById('regConfirmPassword');
             const signupForm = document.getElementById('signupForm');
             const regEmail = document.getElementById('regEmail');
             const regEmailError = document.getElementById('regEmailError');
             const regPasswordError = document.getElementById('regPasswordError');
+            const regConfirmPasswordError = document.getElementById('regConfirmPasswordError');
 
             if (toggleRegPassword && regPassword) {
                 toggleRegPassword.addEventListener('click', () => {
                     const isPass = regPassword.getAttribute('type') === 'password';
                     regPassword.setAttribute('type', isPass ? 'text' : 'password');
                     toggleRegPassword.textContent = isPass ? 'Hide' : 'Show';
+                });
+            }
+
+            if (toggleRegConfirmPassword && regConfirmPassword) {
+                toggleRegConfirmPassword.addEventListener('click', () => {
+                    const isPass = regConfirmPassword.getAttribute('type') === 'password';
+                    regConfirmPassword.setAttribute('type', isPass ? 'text' : 'password');
+                    toggleRegConfirmPassword.textContent = isPass ? 'Hide' : 'Show';
                 });
             }
 
@@ -63,6 +83,12 @@
             if (regPassword) {
                 regPassword.addEventListener('input', () => {
                     regPasswordError.textContent = '';
+                });
+            }
+
+            if (regConfirmPassword) {
+                regConfirmPassword.addEventListener('input', () => {
+                    regConfirmPasswordError.textContent = '';
                 });
             }
 
@@ -80,9 +106,11 @@
                     let valid = true;
                     regEmailError.textContent = '';
                     regPasswordError.textContent = '';
+                    regConfirmPasswordError.textContent = '';
 
                     const emailVal = regEmail.value.trim();
                     const passVal = regPassword.value;
+                    const confirmPassVal = regConfirmPassword ? regConfirmPassword.value : '';
                     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
                     const passRegex = /^[a-zA-Z0-9_!@#$%^&*()]+$/;
 
@@ -105,6 +133,14 @@
                         valid = false;
                     } else if (!passRegex.test(passVal)) {
                         regPasswordError.textContent = 'Пароль містить недопустимі символи. Дозволено: a-z, A-Z, 0-9, _!@#$%^&*()';
+                        valid = false;
+                    }
+
+                    if (!confirmPassVal) {
+                        regConfirmPasswordError.textContent = 'Поле підтвердження пароля є обов’язковим';
+                        valid = false;
+                    } else if (confirmPassVal !== passVal) {
+                        regConfirmPasswordError.textContent = 'Паролі не збігаються';
                         valid = false;
                     }
 
@@ -141,4 +177,4 @@
     </script>
 </body>
 
-</html>
+</html>
