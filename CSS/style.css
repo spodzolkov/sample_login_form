@@ -288,7 +288,9 @@ button#loginBtn:active, .primary-button:active {
     }
 
     .navbar {
-        flex-direction: column;
+        flex-direction: row;
+        overflow: hidden;
+        white-space: nowrap;
         gap: 8px;
         width: 100%;
     }
