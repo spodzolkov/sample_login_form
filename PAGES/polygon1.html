@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Полігон 1: GeneralQA Bug Invaders - QA Manual 19.09.2024</title>
+    <link rel="stylesheet" href="../CSS/style.css">
+</head>
+<body>
+    <div class="polygon-page-container">
+        <!-- Навігаційна шапка -->
+        <div class="polygon-header">
+            <a href="dashboard.html" class="back-link">← Повернутися в Особистий Кабінет</a>
+            <div class="breadcrumbs">Головна / Особистий Кабінет / Полігон 1: Space Invaders</div>
+        </div>
+
+        <!-- Двоколонкова сітка Полігону 1 -->
+        <div class="polygon-grid">
+            <!-- Лівий блок: Гра та Керування -->
+            <div class="game-section">
+                <div class="game-card">
+                    <h1 class="game-title">👾 Полігон 1: GeneralQA Bug Invaders</h1>
+                    <p class="game-description">
+                        Навчальний полігон для тестування Canvas-анімацій, фізики колізій, 3-рівневого геймплейного лупу та збереження рекордів у БД.
+                    </p>
+
+                    <div class="controls-info">
+                        <strong>Керування:</strong>
+                        <span><b>◄ / ►</b> або <b>A / D</b> — Рух</span>
+                        <span><b>Space</b> або <b>▲</b> — Постріл</span>
+                        <span><b>P / Esc</b> — Пауза</span>
+                    </div>
+
+                    <!-- Оболонка Canvas ігрового поля -->
+                    <div class="canvas-wrapper">
+                        <canvas id="spaceInvadersCanvas" width="800" height="600"></canvas>
+                        
+                        <!-- Оверлей стану гри (Start / Pause / Game Over) -->
+                        <div id="gameOverlay" class="game-overlay">
+                            <div class="overlay-content">
+                                <h2 id="overlayTitle">GeneralQA Bug Invaders</h2>
+                                <p id="overlaySubtitle">Натисніть "СТАРТ" або Пробіл для початку гри</p>
+                                <button id="startBtn" class="primary-button" style="max-width: 200px; margin-top: 15px;">СТАРТ ГРИ</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Мобільні сенсорні кнопки (Touch Controls) -->
+                    <div class="touch-controls">
+                        <button id="touchLeftBtn" class="touch-btn">◄</button>
+                        <button id="touchShootBtn" class="touch-btn shoot-btn">🚀 СТРІЛЯТИ</button>
+                        <button id="touchRightBtn" class="touch-btn">►</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Правий блок: Таблиця Рекордів Топ-10 -->
+            <div class="leaderboard-section">
+                <div class="leaderboard-card">
+                    <div class="leaderboard-header">
+                        <h2>🏆 Топ-10 Рекордсменів</h2>
+                        <button id="refreshScoresBtn" class="refresh-btn" title="Оновити список">🔄</button>
+                    </div>
+                    <p class="leaderboard-subtitle">Збережено у БД (`/api/scores`)</p>
+                    
+                    <div class="table-container">
+                        <table class="scores-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Нікнейм</th>
+                                    <th>Очки</th>
+                                    <th>Хвиля</th>
+                                    <th>Дата</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboardBody">
+                                <tr>
+                                    <td colspan="5" class="loading-cell">Завантаження рекордів...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальне вікно діалогу після програшу (Новий рекорд) -->
+    <div id="scoreModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h3 class="modal-title">🎉 ВІТАЄМО! НОВИЙ РЕКОРД!</h3>
+            <p class="modal-text">
+                Ви набрали <strong id="modalFinalScore" style="color: #0055ff;">0</strong> очок та досягли хвилі <strong id="modalFinalWave" style="color: #0055ff;">1</strong>!
+            </p>
+            <div class="input-group">
+                <label for="recordNickname">Введіть ваш нікнейм (2-15 символів):</label>
+                <input type="text" id="recordNickname" maxlength="15" placeholder="Наприклад: BugHunterQA" class="form-input">
+                <div id="recordError" class="error"></div>
+            </div>
+            <div class="modal-buttons">
+                <button id="saveRecordBtn" class="primary-button">Зберегти рекорд</button>
+                <button id="closeModalBtn" class="secondary-button">Пропустити</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Скрипт гри та логіки Полігону 1 -->
+    <script src="../JS/space_invaders.js"></script>
+</body>
+</html>
