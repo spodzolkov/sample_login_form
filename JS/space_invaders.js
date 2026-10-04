@@ -705,22 +705,10 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.fillRect(playerLaser.x, playerLaser.y, playerLaser.width, playerLaser.height);
         }
 
-        // Render Aliens Armada
+        // Render Aliens Armada with Stylized Bugs
         aliens.forEach(alien => {
             if (!alien.alive) return;
-
-            if (alien.type === 'small') ctx.fillStyle = '#ff3366'; // Top row
-            else if (alien.type === 'medium') ctx.fillStyle = '#00ccff'; // Middle rows
-            else ctx.fillStyle = '#ffaa00'; // Bottom row
-
-            // Simple Sprite Rendering
-            const frameOffset = alien.frame === 1 ? 2 : 0;
-            ctx.fillRect(alien.x + frameOffset, alien.y, alien.width - frameOffset * 2, alien.height);
-            
-            // Bug eyes/antenna details
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(alien.x + 6, alien.y + 6, 4, 4);
-            ctx.fillRect(alien.x + alien.width - 10, alien.y + 6, 4, 4);
+            drawBug(alien);
         });
 
         // Render Alien Bombs
@@ -735,9 +723,11 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.beginPath();
             ctx.ellipse(ufo.x + ufo.width / 2, ufo.y + ufo.height / 2, ufo.width / 2, ufo.height / 2, 0, 0, Math.PI * 2);
             ctx.fill();
+            ctx.fillStyle = '#ffff00';
+            ctx.fillRect(ufo.x + 12, ufo.y + 4, 24, 6);
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 10px sans-serif';
-            ctx.fillText('UFO', ufo.x + 14, ufo.y + 14);
+            ctx.font = 'bold 10px monospace';
+            ctx.fillText('UFO', ufo.x + 14, ufo.y + 16);
         }
 
         // Render Red Danger Line at Bottom
@@ -749,6 +739,121 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.lineTo(CANVAS_WIDTH, player.y);
         ctx.stroke();
         ctx.setLineDash([]);
+    };
+
+    // Helper: Draw Stylized Pixel Art Bugs
+    const drawBug = (alien) => {
+        const x = alien.x;
+        const y = alien.y;
+        const w = alien.width;
+        const h = alien.height;
+        const f = alien.frame; // 0 or 1
+
+        ctx.save();
+
+        if (alien.type === 'small') {
+            // --- 1. Small Top Bug (Pink/Magenta 👾) ---
+            ctx.fillStyle = '#ff3366';
+            
+            // Antennae
+            if (f === 0) {
+                ctx.fillRect(x + 4, y, 4, 4);
+                ctx.fillRect(x + w - 8, y, 4, 4);
+            } else {
+                ctx.fillRect(x + 2, y + 2, 4, 4);
+                ctx.fillRect(x + w - 6, y + 2, 4, 4);
+            }
+
+            // Main Head & Body
+            ctx.fillRect(x + 6, y + 4, w - 12, 14);
+            ctx.fillRect(x + 4, y + 8, w - 8, 8);
+
+            // Animated Legs
+            if (f === 0) {
+                ctx.fillRect(x + 2, y + 16, 4, 6);
+                ctx.fillRect(x + 10, y + 18, 4, 6);
+                ctx.fillRect(x + w - 14, y + 18, 4, 6);
+                ctx.fillRect(x + w - 6, y + 16, 4, 6);
+            } else {
+                ctx.fillRect(x + 4, y + 18, 4, 6);
+                ctx.fillRect(x + w - 8, y + 18, 4, 6);
+            }
+
+            // Eyes (White & Black pupils)
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(x + 8, y + 8, 4, 4);
+            ctx.fillRect(x + w - 12, y + 8, 4, 4);
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(x + 9, y + 9, 2, 2);
+            ctx.fillRect(x + w - 11, y + 9, 2, 2);
+
+        } else if (alien.type === 'medium') {
+            // --- 2. Medium Middle Bug (Cyan/Blue 👾) ---
+            ctx.fillStyle = '#00ccff';
+
+            // Horns / Pincers
+            ctx.fillRect(x + 6, y, 4, 6);
+            ctx.fillRect(x + w - 10, y, 4, 6);
+
+            // Body
+            ctx.fillRect(x + 4, y + 6, w - 8, 12);
+            ctx.fillRect(x + 2, y + 10, w - 4, 6);
+
+            // Side Arms / Legs
+            if (f === 0) {
+                ctx.fillRect(x, y + 4, 4, 8);
+                ctx.fillRect(x + w - 4, y + 4, 4, 8);
+                ctx.fillRect(x + 6, y + 18, 4, 6);
+                ctx.fillRect(x + w - 10, y + 18, 4, 6);
+            } else {
+                ctx.fillRect(x, y + 12, 4, 8);
+                ctx.fillRect(x + w - 4, y + 12, 4, 8);
+                ctx.fillRect(x + 2, y + 18, 4, 6);
+                ctx.fillRect(x + w - 6, y + 18, 4, 6);
+            }
+
+            // Eyes
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(x + 8, y + 8, 4, 4);
+            ctx.fillRect(x + w - 12, y + 8, 4, 4);
+            ctx.fillStyle = '#181818';
+            ctx.fillRect(x + 10, y + 9, 2, 2);
+            ctx.fillRect(x + w - 10, y + 9, 2, 2);
+
+        } else {
+            // --- 3. Large Bottom Bug (Amber/Orange Beetle 👾) ---
+            ctx.fillStyle = '#ffaa00';
+
+            // Head Dome & Body Shell
+            ctx.fillRect(x + 8, y + 2, w - 16, 4);
+            ctx.fillRect(x + 4, y + 6, w - 8, 12);
+            ctx.fillRect(x + 2, y + 8, w - 4, 6);
+
+            // Animated Tentacles/Legs
+            if (f === 0) {
+                ctx.fillRect(x, y + 12, 4, 8);
+                ctx.fillRect(x + 6, y + 18, 4, 6);
+                ctx.fillRect(x + w - 10, y + 18, 4, 6);
+                ctx.fillRect(x + w - 4, y + 12, 4, 8);
+            } else {
+                ctx.fillRect(x + 2, y + 16, 4, 8);
+                ctx.fillRect(x + 10, y + 18, 4, 6);
+                ctx.fillRect(x + w - 14, y + 18, 4, 8);
+                ctx.fillRect(x + w - 6, y + 16, 4, 8);
+            }
+
+            // Eyes & Shell Pattern
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(x + 8, y + 6, 4, 4);
+            ctx.fillRect(x + w - 12, y + 6, 4, 4);
+            ctx.fillStyle = '#181818';
+            ctx.fillRect(x + 9, y + 7, 2, 2);
+            ctx.fillRect(x + w - 11, y + 7, 2, 2);
+            ctx.fillStyle = '#ffcc00';
+            ctx.fillRect(x + 14, y + 12, w - 28, 2);
+        }
+
+        ctx.restore();
     };
 
     // Main Game Loop Handler
