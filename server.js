@@ -218,10 +218,14 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Запуск сервера
-app.listen(PORT, () => {
-    console.log(`===================================================`);
-    console.log(` Сервер запущен успішно на порту ${PORT}!`);
-    console.log(` Базовий двигун БД: ${dbMode.toUpperCase()}`);
-    console.log(`===================================================`);
-});
+// Запуск сервера (тільки при прямому запуску, не під час тестів)
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`===================================================`);
+        console.log(` Сервер запущен успішно на порту ${PORT}!`);
+        console.log(` Базовий двигун БД: ${dbMode.toUpperCase()}`);
+        console.log(`===================================================`);
+    });
+}
+
+module.exports = app;
