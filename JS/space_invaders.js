@@ -74,20 +74,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const playExplosionSound = () => {
         if (!audioCtx) return;
         try {
-            const bufferSize = audioCtx.sampleRate * 0.25;
-            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-            const data = buffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) {
-                data[i] = Math.random() * 2 - 1;
-            }
-            const noise = audioCtx.createBufferSource();
-            noise.buffer = buffer;
+            // BUG-POLY1-09: Replaced explosion noise with a high-pitched 4000Hz siren tone
+            const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(4000, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
-            noise.connect(gain);
+            osc.connect(gain);
             gain.connect(audioCtx.destination);
-            noise.start();
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.25);
         } catch {}
     };
 
@@ -205,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
             for (let c = 0; c < 11; c++) {
                 let points = 10;
                 let type = 'large'; // Bottom row
-                if (r === 0) { points = 30; type = 'small'; }
+                if (r === 0) { points = 3; type = 'small'; } // BUG-POLY1-03: points = 3 instead of 30
                 else if (r === 1 || r === 2) { points = 20; type = 'medium'; }
                 
                 aliens.push({
@@ -289,8 +286,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event Listeners (Keyboard)
     window.addEventListener('keydown', (e) => {
         initAudio();
-        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
-        if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+        // BUG-POLY1-04: Inverted movement controls (A moves right, D moves left)
+        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.right = true;
+        if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.left = true;
         if (e.key === ' ' || e.key === 'ArrowUp') {
             keys.shoot = true;
             if (gameState === 'START' || gameState === 'GAMEOVER') {
@@ -324,9 +322,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (gameState === 'START' || gameState === 'GAMEOVER') {
             startGame();
         } else if (gameState === 'PLAYING') {
-            firePlayerLaser();
+            // BUG-POLY1-05: Touch shoot button triggers left movement instead of firing laser
+            keys.left = true;
         }
-    }, () => {});
+    }, () => { keys.left = false; });
 
     startBtn.addEventListener('click', () => {
         initAudio();
@@ -340,7 +339,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Modal Events
     saveRecordBtn.addEventListener('click', async () => {
         const nick = recordNickname.value.trim();
-        if (nick.length < 2 || nick.length > 15) {
+        // BUG-POLY1-06: Broken validation check (nick.length < 0 allows 0 and 1 character nicknames)
+        if (nick.length < 0) {
             recordError.textContent = 'Нікнейм повинен містити від 2 до 15 символів.';
             return;
         }
@@ -374,8 +374,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const firePlayerLaser = () => {
-        // RULE: Only 1 active player laser allowed on screen!
-        if (!playerLaser.active && !player.isHit) {
+        // BUG-POLY1-01: Removed !playerLaser.active check to allow infinite machine-gun laser firing
+        if (!player.isHit) {
             playerLaser.active = true;
             playerLaser.x = player.x + player.width / 2 - playerLaser.width / 2;
             playerLaser.y = player.y - playerLaser.height;
@@ -514,12 +514,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     alienDirection *= -1;
                     alienDropNextStep = false;
 
-                    // Check if aliens reached player Y line (Instant Game Over!)
+                    // BUG-POLY1-10: Disabled minDistanceToPlayer bottom collision check (aliens pass through bottom line)
+                    /*
                     const minDistanceToPlayer = Math.min(...aliveAliens.map(a => player.y - (a.y + a.height)));
                     if (minDistanceToPlayer <= 5) {
                         triggerGameOver('REACHED_BOTTOM');
                         return;
                     }
+                    */
                 } else {
                     let hitEdge = false;
                     aliveAliens.forEach(a => {
@@ -572,7 +574,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Bomb vs Player Collision
             if (!player.isHit && checkCollision(bomb, player)) {
                 alienBombs.splice(i, 1);
-                lives--;
+                lives -= 2; // BUG-POLY1-08: Decrements lives by 2 so starting with 3 lives results in -1 lives on player death
                 playExplosionSound();
                 player.isHit = true;
                 player.hitTimer = 1.5;
@@ -585,12 +587,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Bomb vs Bunkers Collision
+            // BUG-POLY1-02: Commented out bunker collision check for alien bombs (bombs pass through bunkers)
+            /*
             for (const bunker of bunkers) {
                 if (damageBunkerAtPoint(bunker, bomb.x + bomb.width / 2, bomb.y + bomb.height)) {
                     alienBombs.splice(i, 1);
                     break;
                 }
             }
+            */
         }
 
         // Update UFO / Mystery Ship
@@ -672,9 +677,14 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillText(`WAVE: ${wave}`, CANVAS_WIDTH - 220, 26);
 
         // Render Lives Icons
+        // BUG-POLY1-08: Render negative lives when lives <= 0
         ctx.fillStyle = '#0055ff';
-        for (let i = 0; i < lives; i++) {
-            ctx.fillText('🚀', CANVAS_WIDTH - 80 + i * 24, 26);
+        if (lives <= 0) {
+            ctx.fillText(`LIVES: ${lives}`, CANVAS_WIDTH - 120, 26);
+        } else {
+            for (let i = 0; i < lives; i++) {
+                ctx.fillText('🚀', CANVAS_WIDTH - 80 + i * 24, 26);
+            }
         }
 
         // Render Bunkers

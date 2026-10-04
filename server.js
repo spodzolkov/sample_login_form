@@ -117,12 +117,12 @@ const writeJsonScores = (scores) => {
     fs.writeFileSync(scoresJsonPath, JSON.stringify(scores, null, 2));
 };
 
-// Операція отримання Топ-10 рекордів
+// Операція отримання Топ-10 рекордів (BUG-POLY1-07: ORDER BY score ASC)
 const dbGetTopScores = async () => {
     await initDatabase();
 
     if (dbMode === 'sql.js' && sqlDb) {
-        const stmt = sqlDb.prepare('SELECT id, nickname, score, wave, created_at FROM scores ORDER BY score DESC, created_at ASC LIMIT 10');
+        const stmt = sqlDb.prepare('SELECT id, nickname, score, wave, created_at FROM scores ORDER BY score ASC, created_at ASC LIMIT 10');
         const rows = [];
         while (stmt.step()) {
             rows.push(stmt.getAsObject());
@@ -132,7 +132,7 @@ const dbGetTopScores = async () => {
     } else {
         const scores = readJsonScores();
         return scores
-            .sort((a, b) => b.score - a.score || new Date(a.created_at) - new Date(b.created_at))
+            .sort((a, b) => a.score - b.score || new Date(a.created_at) - new Date(b.created_at))
             .slice(0, 10);
     }
 };
