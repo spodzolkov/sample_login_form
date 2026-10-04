@@ -159,13 +159,122 @@ button#loginBtn:active, .primary-button:active {
     font-size: 15px;
 }
 
+/* --- Специфічні стилі для оновленого Dashboard --- */
+
+.dashboard-container {
+    background-color: #2e2e2e;
+    width: 100%;
+    max-width: 620px;
+    padding: 28px;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    text-align: center;
+}
+
+/* Навігаційне меню з відокремленою іконкою профілю */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #1e1e1e;
+    padding: 10px 16px;
+    border-radius: 6px;
+    margin-bottom: 24px;
+    border: 1px solid #3c3c3c;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.nav-item {
+    color: #cccccc;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 4px;
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.nav-item:hover {
+    color: #ffffff;
+    background-color: #0055ff;
+}
+
+/* Відокремлена кнопка шестерні редагування профілю */
+.profile-settings-btn {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 36px;
+    height: 36px;
+    color: #888888;
+    background-color: #2e2e2e;
+    border: 1px solid #444444;
+    border-radius: 50%;
+    text-decoration: none;
+    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    position: relative;
+}
+
+.profile-settings-btn:hover {
+    color: #ffffff;
+    background-color: #0055ff;
+    border-color: #0055ff;
+    transform: rotate(45deg);
+}
+
+/* Графічний блок GeneralQA */
+.general-qa-badge {
+    background-color: #2e2e2e;
+    border: 1px solid #444444;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px auto;
+    max-width: 280px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.general-qa-badge:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 85, 255, 0.25);
+}
+
+.bug-icon-wrapper {
+    width: 130px;
+    height: 130px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.general-qa-img {
+    width: 130px;
+    height: 130px;
+    object-fit: contain;
+}
+
+.general-qa-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #0055ff;
+    letter-spacing: 1px;
+}
+
 /* Responsive design for mobile viewports */
 @media (max-width: 768px) {
     body {
         padding: 12px;
     }
 
-    .container, .card-container {
+    .container, .card-container, .dashboard-container {
         padding: 18px;
     }
 
@@ -177,4 +286,16 @@ button#loginBtn:active, .primary-button:active {
         font-size: 14px;
         padding: 10px;
     }
+
+    .navbar {
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .nav-item {
+        width: 100%;
+        text-align: center;
+    }
 }
+

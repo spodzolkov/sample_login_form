@@ -7,11 +7,48 @@
     <link rel="stylesheet" href="../CSS/style.css">
 </head>
 <body>
-    <div class="card-container dashboard-card">
+    <div class="dashboard-container">
+        <!-- Логотип проєкту -->
         <div class="logo">QA Manual 19.09.2024</div>
-        <h2 style="margin-bottom: 12px; font-size: 18px; color: #ffffff;">Вітаємо в особистому кабінеті!</h2>
-        <p>Ви успішно увійшли до системи.</p>
-        <a href="../index.html" class="primary-button">Вийти</a>
+
+        <!-- Навігаційне меню з відокремленою кнопкою профілю (Шестерня з тултіпом) -->
+        <nav class="navbar">
+            <div class="nav-links">
+                <a href="#polygon1" class="nav-item">Полігон 1</a>
+                <a href="#polygon2" class="nav-item">Полігон 2</a>
+                <a href="#polygon3" class="nav-item">Полігон 3</a>
+            </div>
+            <a href="profile_edit.html" class="profile-settings-btn" title="Редагування профілю" aria-label="Редагування профілю">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            </a>
+        </nav>
+
+        <!-- Привітальний блок -->
+        <div class="dashboard-welcome">
+            <h2 class="dashboard-welcome-title" style="margin-bottom: 12px; font-size: 22px; color: #ffffff;">
+                Вітаємо на полігоні для QA!!
+            </h2>
+            <p style="color: #cccccc; font-size: 15px; margin-bottom: 20px;">
+                Ви успішно увійшли до системи та маєте доступ до тестування функціоналу.
+            </p>
+        </div>
+
+        <!-- Брендовий бейдж GeneralQA з перекресленим багом (Згенерована картинка з фоном #2e2e2e, збільшений розмір) -->
+        <div class="general-qa-badge">
+            <div class="bug-icon-wrapper">
+                <img src="../IMAGES/general_qa_badge.png" alt="GeneralQA Bug Free Zone" class="general-qa-img" style="width: 130px; height: 130px; object-fit: contain;">
+            </div>
+            <div class="general-qa-title">GeneralQA</div>
+        </div>
+
+        <!-- Кнопка виходу -->
+        <div style="margin-top: 24px;">
+            <a href="../index.html" class="primary-button" style="max-width: 200px; display: inline-block;">Вийти</a>
+        </div>
     </div>
 </body>
 </html>
+
