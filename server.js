@@ -1,4 +1,4 @@
-// server.js - Universal Node.js Express Backend with Fail-Safe Cross-Platform Database
+// server.js - Universal Node.js Express Backend with WebAssembly SQLite (sql.js)
 
 const express = require('express');
 const cors = require('cors');
@@ -13,22 +13,42 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
-// === ДРАЙВЕР БАЗИ ДАНИХ (УНІВЕРСАЛЬНИЙ КРОС-ПЛАТФОРМЕНИЙ) ===
-let dbMode = 'sqlite';
-let sqliteDb = null;
+// === ДРАЙВЕР БАЗИ ДАНИХ (SQL.JS WEBASSEMBLY / JSON FALLBACK) ===
+let dbMode = 'sql.js';
+let sqlDb = null;
 const jsonDbPath = path.join(__dirname, 'database.json');
 const sqliteDbPath = path.join(__dirname, 'database.sqlite');
 
-// Спроба підключити SQLite з автоматичним фолбеком на JSON File DB для Render/Linux
-try {
-    const sqlite3 = require('sqlite3').verbose();
-    sqliteDb = new sqlite3.Database(sqliteDbPath, (err) => {
-        if (err) {
-            console.warn('[БД] SQLite недоступна, перехід на JSON Database Engine:', err.message);
-            dbMode = 'json';
-        } else {
-            console.log('[БД] Успішно підключено SQLite базу даних.');
-            sqliteDb.run(`
+const saveSqliteFile = () => {
+    if (sqlDb) {
+        try {
+            const data = sqlDb.export();
+            const buffer = Buffer.from(data);
+            fs.writeFileSync(sqliteDbPath, buffer);
+        } catch (e) {
+            console.error('[БД] Помилка збереження SQLite файлу:', e.message);
+        }
+    }
+};
+
+let dbInitPromise = null;
+
+const initDatabase = async () => {
+    if (dbInitPromise) return dbInitPromise;
+
+    dbInitPromise = (async () => {
+        try {
+            const initSqlJs = require('sql.js');
+            const SQL = await initSqlJs();
+
+            if (fs.existsSync(sqliteDbPath)) {
+                const filebuffer = fs.readFileSync(sqliteDbPath);
+                sqlDb = new SQL.Database(filebuffer);
+            } else {
+                sqlDb = new SQL.Database();
+            }
+
+            sqlDb.run(`
                 CREATE TABLE IF NOT EXISTS users (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     email TEXT UNIQUE NOT NULL,
@@ -36,20 +56,27 @@ try {
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             `);
+            saveSqliteFile();
+            dbMode = 'sql.js';
+            console.log('[БД] Успішно підключено та ініціалізовано sql.js (WebAssembly SQLite Engine).');
+        } catch (e) {
+            console.warn('[БД] Помилка ініціалізації sql.js, перехід на JSON Database Engine:', e.message);
+            dbMode = 'json';
         }
-    });
-} catch (e) {
-    console.warn('[БД] Нативні бінарники SQLite3 не завантажилися (ERR_DLOPEN_FAILED на Render/Linux).');
-    console.log('[БД] Автоматичний перехід на вбудований безпомилковий JSON Database Engine!');
-    dbMode = 'json';
-}
+    })();
+
+    return dbInitPromise;
+};
+
+// Запускаємо ініціалізацію бази при старті
+initDatabase();
 
 // Ініціалізація JSON БД при відсутності файлу
 if (!fs.existsSync(jsonDbPath)) {
     fs.writeFileSync(jsonDbPath, JSON.stringify([], null, 2));
 }
 
-// Допоміжні функції роботи з базою даних
+// Допоміжні функції роботи з JSON БД
 const readJsonUsers = () => {
     try {
         const data = fs.readFileSync(jsonDbPath, 'utf8');
@@ -64,77 +91,106 @@ const writeJsonUsers = (users) => {
 };
 
 // Операція додавання користувача
-const dbAddUser = (email, password) => {
-    return new Promise((resolve, reject) => {
-        if (dbMode === 'sqlite' && sqliteDb) {
-            const sql = 'INSERT INTO users (email, password) VALUES (?, ?)';
-            sqliteDb.run(sql, [email, password], function(err) {
-                if (err) {
-                    if (err.message.includes('UNIQUE constraint failed')) {
-                        return reject({ code: 'DUPLICATE', message: 'Користувач з таким Email вже існує.' });
-                    }
-                    return reject({ code: 'ERROR', message: err.message });
-                }
-                resolve({ id: this.lastID, email, created_at: new Date().toISOString() });
-            });
-        } else {
-            // JSON DB Mode
-            const users = readJsonUsers();
-            const exists = users.some(u => u.email.toLowerCase() === email.toLowerCase());
+const dbAddUser = async (email, password) => {
+    await initDatabase();
+
+    if (dbMode === 'sql.js' && sqlDb) {
+        try {
+            // Перевірка UNIQUE
+            const checkStmt = sqlDb.prepare('SELECT id FROM users WHERE LOWER(email) = LOWER(?)');
+            checkStmt.bind([email]);
+            const exists = checkStmt.step();
+            checkStmt.free();
+
             if (exists) {
-                return reject({ code: 'DUPLICATE', message: 'Користувач з таким Email вже існує в базі даних.' });
+                throw { code: 'DUPLICATE', message: 'Користувач з таким Email вже існує.' };
             }
-            const newUser = {
-                id: users.length + 1,
-                email,
-                password,
-                created_at: new Date().toISOString()
-            };
-            users.push(newUser);
-            writeJsonUsers(users);
-            resolve(newUser);
+
+            const now = new Date().toISOString();
+            const insertStmt = sqlDb.prepare('INSERT INTO users (email, password, created_at) VALUES (?, ?, ?)');
+            insertStmt.run([email, password, now]);
+            insertStmt.free();
+
+            saveSqliteFile();
+
+            const getStmt = sqlDb.prepare('SELECT id, email, created_at FROM users WHERE email = ?');
+            getStmt.bind([email]);
+            let newUser = { id: 1, email, created_at: now };
+            if (getStmt.step()) {
+                newUser = getStmt.getAsObject();
+            }
+            getStmt.free();
+
+            return newUser;
+        } catch (err) {
+            if (err.code === 'DUPLICATE') throw err;
+            if (err.message && err.message.includes('UNIQUE constraint failed')) {
+                throw { code: 'DUPLICATE', message: 'Користувач з таким Email вже існує.' };
+            }
+            throw { code: 'ERROR', message: err.message };
         }
-    });
+    } else {
+        // JSON DB Mode
+        const users = readJsonUsers();
+        const exists = users.some(u => u.email.toLowerCase() === email.toLowerCase());
+        if (exists) {
+            throw { code: 'DUPLICATE', message: 'Користувач з таким Email вже існує в базі даних.' };
+        }
+        const newUser = {
+            id: users.length + 1,
+            email,
+            password,
+            created_at: new Date().toISOString()
+        };
+        users.push(newUser);
+        writeJsonUsers(users);
+        return newUser;
+    }
 };
 
 // Операція пошуку користувача для входу
-const dbFindUser = (email, password) => {
-    return new Promise((resolve, reject) => {
-        if (dbMode === 'sqlite' && sqliteDb) {
-            const sql = 'SELECT * FROM users WHERE email = ? AND password = ?';
-            sqliteDb.get(sql, [email, password], (err, row) => {
-                if (err) return reject(err);
-                resolve(row);
-            });
-        } else {
-            // JSON DB Mode
-            const users = readJsonUsers();
-            const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
-            resolve(user || null);
+const dbFindUser = async (email, password) => {
+    await initDatabase();
+
+    if (dbMode === 'sql.js' && sqlDb) {
+        const stmt = sqlDb.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?) AND password = ?');
+        stmt.bind([email, password]);
+        let user = null;
+        if (stmt.step()) {
+            user = stmt.getAsObject();
         }
-    });
+        stmt.free();
+        return user;
+    } else {
+        // JSON DB Mode
+        const users = readJsonUsers();
+        return users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password) || null;
+    }
 };
 
 // Операція отримання списку користувачів (для QA)
-const dbGetAllUsers = () => {
-    return new Promise((resolve, reject) => {
-        if (dbMode === 'sqlite' && sqliteDb) {
-            sqliteDb.all('SELECT id, email, created_at FROM users', [], (err, rows) => {
-                if (err) return reject(err);
-                resolve(rows);
-            });
-        } else {
-            const users = readJsonUsers();
-            const safeUsers = users.map(({ id, email, created_at }) => ({ id, email, created_at }));
-            resolve(safeUsers);
+const dbGetAllUsers = async () => {
+    await initDatabase();
+
+    if (dbMode === 'sql.js' && sqlDb) {
+        const stmt = sqlDb.prepare('SELECT id, email, created_at FROM users');
+        const rows = [];
+        while (stmt.step()) {
+            rows.push(stmt.getAsObject());
         }
-    });
+        stmt.free();
+        return rows;
+    } else {
+        const users = readJsonUsers();
+        return users.map(({ id, email, created_at }) => ({ id, email, created_at }));
+    }
 };
 
 // === REST API ENDPOINTS ===
 
 // 1. Healthcheck
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
+    await initDatabase();
     res.json({ status: 'ok', dbMode, timestamp: new Date().toISOString() });
 });
 
@@ -220,10 +276,11 @@ app.get('*', (req, res) => {
 
 // Запуск сервера (тільки при прямому запуску, не під час тестів)
 if (require.main === module) {
-    app.listen(PORT, () => {
+    app.listen(PORT, async () => {
+        await initDatabase();
         console.log(`===================================================`);
         console.log(` Сервер запущен успішно на порту ${PORT}!`);
-        console.log(` Базовий двигун БД: ${dbMode.toUpperCase()}`);
+        console.log(` Базовий двигун БД: ${dbMode.toUpperCase()} (WebAssembly)`);
         console.log(`===================================================`);
     });
 }
