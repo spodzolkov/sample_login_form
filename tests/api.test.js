@@ -144,4 +144,41 @@ describe('Login Form API Unit & Integration Tests', () => {
             expect(res.body.count).toBeGreaterThanOrEqual(1);
         });
     });
+
+    // 5. Scores Endpoints (Leaderboard)
+    describe('Scores API (/api/scores)', () => {
+        it('повинен успішно додавати новий рекорд через POST /api/scores', async () => {
+            const res = await request(app)
+                .post('/api/scores')
+                .send({ nickname: 'QA_Hero', score: 1550, wave: 2 })
+                .expect('Content-Type', /json/)
+                .expect(201);
+
+            expect(res.body).toHaveProperty('success', true);
+            expect(res.body).toHaveProperty('recordId');
+        });
+
+        it('повинен повертати 400 при відсутності або некоректному нікнеймі', async () => {
+            const res = await request(app)
+                .post('/api/scores')
+                .send({ nickname: 'A', score: 500 })
+                .expect(400);
+
+            expect(res.body).toHaveProperty('success', false);
+            expect(res.body.message).toMatch(/від 2 до 15/i);
+        });
+
+        it('повинен повертати Топ-10 рекордів через GET /api/scores', async () => {
+            const res = await request(app)
+                .get('/api/scores')
+                .expect('Content-Type', /json/)
+                .expect(200);
+
+            expect(res.body).toHaveProperty('success', true);
+            expect(Array.isArray(res.body.scores)).toBe(true);
+            expect(res.body.scores.length).toBeGreaterThanOrEqual(1);
+            expect(res.body.scores[0]).toHaveProperty('nickname');
+            expect(res.body.scores[0]).toHaveProperty('score');
+        });
+    });
 });

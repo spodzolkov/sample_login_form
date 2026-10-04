@@ -56,6 +56,15 @@ const initDatabase = async () => {
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             `);
+            sqlDb.run(`
+                CREATE TABLE IF NOT EXISTS scores (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nickname TEXT NOT NULL,
+                    score INTEGER NOT NULL,
+                    wave INTEGER DEFAULT 1,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
             saveSqliteFile();
             dbMode = 'sql.js';
             console.log('[БД] Успішно підключено та ініціалізовано sql.js (WebAssembly SQLite Engine).');
@@ -70,6 +79,11 @@ const initDatabase = async () => {
 
 // Запускаємо ініціалізацію бази при старті
 initDatabase();
+
+const scoresJsonPath = path.join(__dirname, 'scores.json');
+if (!fs.existsSync(scoresJsonPath)) {
+    fs.writeFileSync(scoresJsonPath, JSON.stringify([], null, 2));
+}
 
 // Ініціалізація JSON БД при відсутності файлу
 if (!fs.existsSync(jsonDbPath)) {
@@ -88,6 +102,74 @@ const readJsonUsers = () => {
 
 const writeJsonUsers = (users) => {
     fs.writeFileSync(jsonDbPath, JSON.stringify(users, null, 2));
+};
+
+const readJsonScores = () => {
+    try {
+        const data = fs.readFileSync(scoresJsonPath, 'utf8');
+        return JSON.parse(data || '[]');
+    } catch {
+        return [];
+    }
+};
+
+const writeJsonScores = (scores) => {
+    fs.writeFileSync(scoresJsonPath, JSON.stringify(scores, null, 2));
+};
+
+// Операція отримання Топ-10 рекордів
+const dbGetTopScores = async () => {
+    await initDatabase();
+
+    if (dbMode === 'sql.js' && sqlDb) {
+        const stmt = sqlDb.prepare('SELECT id, nickname, score, wave, created_at FROM scores ORDER BY score DESC, created_at ASC LIMIT 10');
+        const rows = [];
+        while (stmt.step()) {
+            rows.push(stmt.getAsObject());
+        }
+        stmt.free();
+        return rows;
+    } else {
+        const scores = readJsonScores();
+        return scores
+            .sort((a, b) => b.score - a.score || new Date(a.created_at) - new Date(b.created_at))
+            .slice(0, 10);
+    }
+};
+
+// Операція додавання рекорду
+const dbAddScore = async (nickname, score, wave = 1) => {
+    await initDatabase();
+
+    const now = new Date().toISOString();
+
+    if (dbMode === 'sql.js' && sqlDb) {
+        const stmt = sqlDb.prepare('INSERT INTO scores (nickname, score, wave, created_at) VALUES (?, ?, ?, ?)');
+        stmt.run([nickname, score, wave, now]);
+        stmt.free();
+        saveSqliteFile();
+
+        const getStmt = sqlDb.prepare('SELECT last_insert_rowid() as id');
+        let recordId = Date.now();
+        if (getStmt.step()) {
+            recordId = getStmt.getAsObject().id;
+        }
+        getStmt.free();
+
+        return { id: recordId, nickname, score, wave, created_at: now };
+    } else {
+        const scores = readJsonScores();
+        const newRecord = {
+            id: scores.length + 1,
+            nickname,
+            score: Number(score),
+            wave: Number(wave) || 1,
+            created_at: now
+        };
+        scores.push(newRecord);
+        writeJsonScores(scores);
+        return newRecord;
+    }
 };
 
 // Операція додавання користувача
@@ -266,6 +348,49 @@ app.get('/api/users', async (req, res) => {
         res.json({ success: true, count: users.length, dbEngine: dbMode, users });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// 5. Отримання Топ-10 Рекордів (GET /api/scores)
+app.get('/api/scores', async (req, res) => {
+    try {
+        const scores = await dbGetTopScores();
+        res.json({ success: true, count: scores.length, scores });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// 6. Додавання Нового Рекорду (POST /api/scores)
+app.post('/api/scores', async (req, res) => {
+    const { nickname, score, wave } = req.body;
+
+    if (!nickname || score === undefined || score === null) {
+        return res.status(400).json({ success: false, message: 'Нікнейм та кількість очок є обов’язковими.' });
+    }
+
+    const nick = String(nickname).trim();
+    const numericScore = Number(score);
+    const numericWave = Number(wave) || 1;
+
+    if (nick.length < 2 || nick.length > 15) {
+        return res.status(400).json({ success: false, message: 'Нікнейм повинен містити від 2 до 15 символів.' });
+    }
+
+    if (isNaN(numericScore) || numericScore <= 0) {
+        return res.status(400).json({ success: false, message: 'Кількість очок повинна бути додатним числом.' });
+    }
+
+    try {
+        const record = await dbAddScore(nick, numericScore, numericWave);
+        console.log(`[БД] Збережено новий рекорд (${dbMode}):`, nick, numericScore);
+        res.status(201).json({
+            success: true,
+            message: 'Рекорд успішно збережено в базу даних!',
+            recordId: record.id
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Помилка сервера при збереженні рекорду.' });
     }
 });
 
