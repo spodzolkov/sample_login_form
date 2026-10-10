@@ -53,9 +53,14 @@ const initDatabase = async () => {
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     email TEXT UNIQUE NOT NULL,
                     password TEXT NOT NULL,
+                    first_name TEXT DEFAULT '',
+                    last_name TEXT DEFAULT '',
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             `);
+            try { sqlDb.run(`ALTER TABLE users ADD COLUMN first_name TEXT DEFAULT ''`); } catch (e) {}
+            try { sqlDb.run(`ALTER TABLE users ADD COLUMN last_name TEXT DEFAULT ''`); } catch (e) {}
+
             sqlDb.run(`
                 CREATE TABLE IF NOT EXISTS scores (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -250,12 +255,69 @@ const dbFindUser = async (email, password) => {
     }
 };
 
+// Пошук користувача за Email
+const dbGetUserByEmail = async (email) => {
+    await initDatabase();
+    if (dbMode === 'sql.js' && sqlDb) {
+        const stmt = sqlDb.prepare('SELECT id, email, first_name, last_name, created_at FROM users WHERE LOWER(email) = LOWER(?)');
+        stmt.bind([email]);
+        let user = null;
+        if (stmt.step()) {
+            user = stmt.getAsObject();
+        }
+        stmt.free();
+        return user;
+    } else {
+        const users = readJsonUsers();
+        const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+        if (!user) return null;
+        return {
+            id: user.id,
+            email: user.email,
+            first_name: user.first_name || '',
+            last_name: user.last_name || '',
+            created_at: user.created_at
+        };
+    }
+};
+
+// Оновлення імені та прізвища профілю
+const dbUpdateUserProfile = async (email, firstName, lastName) => {
+    await initDatabase();
+    const fName = (firstName || '').trim();
+    const lName = (lastName || '').trim();
+
+    if (dbMode === 'sql.js' && sqlDb) {
+        const stmt = sqlDb.prepare('UPDATE users SET first_name = ?, last_name = ? WHERE LOWER(email) = LOWER(?)');
+        stmt.run([fName, lName, email]);
+        stmt.free();
+        saveSqliteFile();
+        return dbGetUserByEmail(email);
+    } else {
+        const users = readJsonUsers();
+        const idx = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+        if (idx !== -1) {
+            users[idx].first_name = fName;
+            users[idx].last_name = lName;
+            writeJsonUsers(users);
+            return {
+                id: users[idx].id,
+                email: users[idx].email,
+                first_name: fName,
+                last_name: lName,
+                created_at: users[idx].created_at
+            };
+        }
+        throw new Error('Користувача не знайдено.');
+    }
+};
+
 // Операція отримання списку користувачів (для QA)
 const dbGetAllUsers = async () => {
     await initDatabase();
 
     if (dbMode === 'sql.js' && sqlDb) {
-        const stmt = sqlDb.prepare('SELECT id, email, created_at FROM users');
+        const stmt = sqlDb.prepare('SELECT id, email, first_name, last_name, created_at FROM users');
         const rows = [];
         while (stmt.step()) {
             rows.push(stmt.getAsObject());
@@ -264,7 +326,13 @@ const dbGetAllUsers = async () => {
         return rows;
     } else {
         const users = readJsonUsers();
-        return users.map(({ id, email, created_at }) => ({ id, email, created_at }));
+        return users.map(({ id, email, first_name, last_name, created_at }) => ({
+            id,
+            email,
+            first_name: first_name || '',
+            last_name: last_name || '',
+            created_at
+        }));
     }
 };
 
@@ -278,10 +346,14 @@ app.get('/api/health', async (req, res) => {
 
 // 2. Реєстрація (POST /api/signup)
 app.post('/api/signup', async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, confirmPassword } = req.body;
 
     if (!email || !password) {
         return res.status(400).json({ success: false, message: 'Email та Password є обов’язковими.' });
+    }
+
+    if (confirmPassword !== undefined && confirmPassword !== password) {
+        return res.status(400).json({ success: false, message: 'Паролі не збігаються.' });
     }
 
     const emailVal = email.trim();
@@ -334,14 +406,82 @@ app.post('/api/login', async (req, res) => {
         res.json({
             success: true,
             message: 'Вхід успішний!',
-            user: { id: user.id, email: user.email, created_at: user.created_at }
+            user: {
+                id: user.id,
+                email: user.email,
+                first_name: user.first_name || '',
+                last_name: user.last_name || '',
+                created_at: user.created_at
+            }
         });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Помилка сервера при перевірці даних.' });
     }
 });
 
-// 4. QA Список користувачів (GET /api/users)
+// 4. Отримання профілю користувача (GET /api/profile)
+app.get('/api/profile', async (req, res) => {
+    const email = req.query.email || req.headers['x-user-email'];
+    if (!email) {
+        return res.status(400).json({ success: false, message: 'Параметр email є обов’язковим.' });
+    }
+
+    try {
+        const user = await dbGetUserByEmail(email.trim());
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'Користувача не знайдено.' });
+        }
+        res.json({ success: true, user });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// 5. Оновлення профілю користувача (PUT /api/profile)
+const handleProfileUpdate = async (req, res) => {
+    const { email, firstName, lastName } = req.body;
+    if (!email) {
+        return res.status(400).json({ success: false, message: 'Email є обов’язковим.' });
+    }
+
+    const fNameVal = (firstName || '').trim();
+    const lNameVal = (lastName || '').trim();
+    const nameRegex = /^[a-zA-Zа-яА-ЯіІїЇєЄґҐ\s'-]+$/;
+
+    if (fNameVal.length > 0) {
+        if (fNameVal.length < 2 || fNameVal.length > 50) {
+            return res.status(400).json({ success: false, message: 'Ім’я повинно містити від 2 до 50 символів.' });
+        }
+        if (!nameRegex.test(fNameVal)) {
+            return res.status(400).json({ success: false, message: 'Ім’я може містити лише літери, дефіс, апостроф та пробіли.' });
+        }
+    }
+
+    if (lNameVal.length > 0) {
+        if (lNameVal.length < 2 || lNameVal.length > 50) {
+            return res.status(400).json({ success: false, message: 'Прізвище повинно містити від 2 до 50 символів.' });
+        }
+        if (!nameRegex.test(lNameVal)) {
+            return res.status(400).json({ success: false, message: 'Прізвище може містити лише літери, дефіс, апостроф та пробіли.' });
+        }
+    }
+
+    try {
+        const updatedUser = await dbUpdateUserProfile(email.trim(), fNameVal, lNameVal);
+        res.json({
+            success: true,
+            message: 'Дані профілю успішно збережено',
+            user: updatedUser
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message || 'Помилка оновлення профілю.' });
+    }
+};
+
+app.put('/api/profile', handleProfileUpdate);
+app.post('/api/profile', handleProfileUpdate);
+
+// 6. QA Список користувачів (GET /api/users)
 app.get('/api/users', async (req, res) => {
     try {
         const users = await dbGetAllUsers();

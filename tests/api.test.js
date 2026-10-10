@@ -5,7 +5,8 @@ describe('Login Form API Unit & Integration Tests', () => {
     const timestamp = Date.now();
     const testUser = {
         email: `test_${timestamp}@example.com`,
-        password: 'ValidPassword123!'
+        password: 'ValidPassword123!',
+        confirmPassword: 'ValidPassword123!'
     };
 
     // 1. Healthcheck Endpoint
@@ -34,6 +35,20 @@ describe('Login Form API Unit & Integration Tests', () => {
             expect(res.body).toHaveProperty('success', true);
             expect(res.body).toHaveProperty('userId');
             expect(res.body.message).toMatch(/Успішна|збережено/i);
+        });
+
+        it('повинен повертати 400 якщо паролі не збігаються (confirmPassword mismatch)', async () => {
+            const res = await request(app)
+                .post('/api/signup')
+                .send({
+                    email: `mismatch_${timestamp}@test.com`,
+                    password: 'Password123!',
+                    confirmPassword: 'DifferentPassword123!'
+                })
+                .expect(400);
+
+            expect(res.body).toHaveProperty('success', false);
+            expect(res.body.message).toMatch(/Паролі не збігаються/i);
         });
 
         it('повинен повертати 400 при відсутності обов’язкових полів', async () => {
@@ -130,7 +145,47 @@ describe('Login Form API Unit & Integration Tests', () => {
         });
     });
 
-    // 4. Get All Users Endpoint (QA Endpoint)
+    // 4. User Profile Endpoints (GET /api/profile & PUT /api/profile)
+    describe('User Profile API (/api/profile)', () => {
+        it('повинен успішно оновлювати та отримувати Ім’я та Прізвище користувача', async () => {
+            const updateRes = await request(app)
+                .put('/api/profile')
+                .send({
+                    email: testUser.email,
+                    firstName: 'Іван',
+                    lastName: 'Петренко'
+                })
+                .expect(200);
+
+            expect(updateRes.body).toHaveProperty('success', true);
+            expect(updateRes.body.user.first_name).toBe('Іван');
+            expect(updateRes.body.user.last_name).toBe('Петренко');
+
+            const getRes = await request(app)
+                .get(`/api/profile?email=${encodeURIComponent(testUser.email)}`)
+                .expect(200);
+
+            expect(getRes.body).toHaveProperty('success', true);
+            expect(getRes.body.user.first_name).toBe('Іван');
+            expect(getRes.body.user.last_name).toBe('Петренко');
+        });
+
+        it('повинен повертати 400 якщо ім’я/прізвище містить некоректні символи', async () => {
+            const res = await request(app)
+                .put('/api/profile')
+                .send({
+                    email: testUser.email,
+                    firstName: 'Ivan123',
+                    lastName: 'Petrenko!'
+                })
+                .expect(400);
+
+            expect(res.body).toHaveProperty('success', false);
+            expect(res.body.message).toMatch(/лише літери/i);
+        });
+    });
+
+    // 5. Get All Users Endpoint (QA Endpoint)
     describe('GET /api/users', () => {
         it('повинен повертати список користувачів та їх кількість', async () => {
             const res = await request(app)
@@ -145,7 +200,7 @@ describe('Login Form API Unit & Integration Tests', () => {
         });
     });
 
-    // 5. Scores Endpoints (Leaderboard)
+    // 6. Scores Endpoints (Leaderboard)
     describe('Scores API (/api/scores)', () => {
         it('повинен успішно додавати новий рекорд через POST /api/scores', async () => {
             const res = await request(app)

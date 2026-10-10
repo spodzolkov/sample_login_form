@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профіль користувача - QA-Poligon WEB APP</title>
+    <link rel="stylesheet" href="../CSS/style.css">
+</head>
+<body>
+    <div class="card-container" style="max-width: 450px;">
+        <div class="logo">QA-Poligon WEB APP</div>
+        <h2 style="text-align: center; margin-bottom: 20px; font-size: 18px; color: #ffffff;">Профіль користувача</h2>
+
+        <form id="profileForm" novalidate>
+            <div class="input-group">
+                <label for="profileEmail">Email</label>
+                <input
+                    type="email"
+                    id="profileEmail"
+                    name="email"
+                    readonly
+                    class="input-readonly"
+                    style="background-color: #252525; color: #aaaaaa; cursor: not-allowed;"
+                >
+            </div>
+
+            <div class="input-group">
+                <label for="firstName">Ім'я</label>
+                <input
+                    type="text"
+                    id="firstName"
+                    name="firstName"
+                    maxlength="50"
+                    placeholder="Введіть ваше ім'я (необов'язково)"
+                    autocomplete="off"
+                >
+                <div class="error" id="firstNameError"></div>
+            </div>
+
+            <div class="input-group">
+                <label for="lastName">Прізвище</label>
+                <input
+                    type="text"
+                    id="lastName"
+                    name="lastName"
+                    maxlength="50"
+                    placeholder="Введіть ваше прізвище (необов'язково)"
+                    autocomplete="off"
+                >
+                <div class="error" id="lastNameError"></div>
+            </div>
+
+            <button type="submit" id="saveProfileBtn" class="primary-button">Зберегти зміни</button>
+
+            <div id="profileMessage" class="message-container" style="margin-top: 15px; text-align: center; font-size: 14px; font-weight: bold;"></div>
+        </form>
+
+        <div class="signup-link" style="margin-top: 20px;">
+            <a href="dashboard.html" class="form-link">← Назад до Дашборду</a>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const profileEmail = document.getElementById('profileEmail');
+            const firstName = document.getElementById('firstName');
+            const lastName = document.getElementById('lastName');
+            const firstNameError = document.getElementById('firstNameError');
+            const lastNameError = document.getElementById('lastNameError');
+            const profileMessage = document.getElementById('profileMessage');
+            const profileForm = document.getElementById('profileForm');
+
+            // Отримання поточного користувача із сесії
+            let currentUser = null;
+            try {
+                const stored = sessionStorage.getItem('currentUser');
+                if (stored) {
+                    currentUser = JSON.parse(stored);
+                }
+            } catch (e) {
+                console.error('Помилка зчитування сесії:', e);
+            }
+
+            if (!currentUser || !currentUser.email) {
+                // Перенаправлення на сторінку авторизації, якщо сесія відсутня
+                window.location.href = '../index.html';
+                return;
+            }
+
+            profileEmail.value = currentUser.email;
+
+            const getApiUrl = (endpoint) => {
+                const origin = window.location.origin;
+                if (origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) {
+                    return endpoint;
+                }
+                return endpoint;
+            };
+
+            // Завантаження збереженого профілю з сервера
+            try {
+                const res = await fetch(getApiUrl(`/api/profile?email=${encodeURIComponent(currentUser.email)}`));
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success && data.user) {
+                        firstName.value = data.user.first_name || '';
+                        lastName.value = data.user.last_name || '';
+                    }
+                }
+            } catch (err) {
+                console.warn('Не вдалося завантажити профіль з сервера:', err);
+                firstName.value = currentUser.first_name || '';
+                lastName.value = currentUser.last_name || '';
+            }
+
+            if (firstName) {
+                firstName.addEventListener('input', () => { firstNameError.textContent = ''; profileMessage.textContent = ''; });
+            }
+            if (lastName) {
+                lastName.addEventListener('input', () => { lastNameError.textContent = ''; profileMessage.textContent = ''; });
+            }
+
+            // Обробка збереження змін профілю
+            if (profileForm) {
+                profileForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    let isValid = true;
+                    firstNameError.textContent = '';
+                    lastNameError.textContent = '';
+                    profileMessage.textContent = '';
+                    profileMessage.className = 'message-container';
+
+                    const fNameVal = firstName.value.trim();
+                    const lNameVal = lastName.value.trim();
+                    const nameRegex = /^[a-zA-Zа-яА-ЯіІїЇєЄґҐ\s'-]+$/;
+
+                    // Валідація Ім'я (необов'язкове, але якщо заповнене — перевіряються умови)
+                    if (fNameVal.length > 0) {
+                        if (fNameVal.length < 2 || fNameVal.length > 50) {
+                            firstNameError.textContent = 'Ім’я повинно містити від 2 до 50 символів.';
+                            isValid = false;
+                        } else if (!nameRegex.test(fNameVal)) {
+                            firstNameError.textContent = 'Ім’я може містити лише літери, дефіс, апостроф та пробіли.';
+                            isValid = false;
+                        }
+                    }
+
+                    // Валідація Прізвища (необов'язкове, але якщо заповнене — перевіряються умови)
+                    if (lNameVal.length > 0) {
+                        if (lNameVal.length < 2 || lNameVal.length > 50) {
+                            lastNameError.textContent = 'Прізвище повинно містити від 2 до 50 символів.';
+                            isValid = false;
+                        } else if (!nameRegex.test(lNameVal)) {
+                            lastNameError.textContent = 'Прізвище може містити лише літери, дефіс, апостроф та пробіли.';
+                            isValid = false;
+                        }
+                    }
+
+                    if (!isValid) return;
+
+                    try {
+                        const response = await fetch(getApiUrl('/api/profile'), {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                email: currentUser.email,
+                                firstName: fNameVal,
+                                lastName: lNameVal
+                            })
+                        });
+
+                        const data = await response.json();
+
+                        if (response.ok && data.success) {
+                            profileMessage.style.color = '#28a745';
+                            profileMessage.textContent = 'Дані профілю успішно збережено';
+
+                            // Оновлення сесії
+                            currentUser.first_name = fNameVal;
+                            currentUser.last_name = lNameVal;
+                            sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                        } else {
+                            profileMessage.style.color = '#ff4d4d';
+                            profileMessage.textContent = data.message || 'Помилка збереження профілю.';
+                        }
+                    } catch (err) {
+                        console.warn('Автономне збереження профілю:', err);
+                        profileMessage.style.color = '#28a745';
+                        profileMessage.textContent = 'Дані профілю успішно збережено (автономний режим)';
+
+                        currentUser.first_name = fNameVal;
+                        currentUser.last_name = lNameVal;
+                        sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
