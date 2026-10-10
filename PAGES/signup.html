@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Реєстрація - QA Manual 19.09.2024</title>
+    <title>Реєстрація - QA-Poligon WEB APP</title>
     <link rel="stylesheet" href="../CSS/style.css">
 </head>
 <body>
     <div class="card-container">
-        <div class="logo">QA Manual 19.09.2024</div>
+        <div class="logo">QA-Poligon WEB APP</div>
         <h2 style="text-align: center; margin-bottom: 20px; font-size: 18px; color: #ffffff;">Реєстрація користувача</h2>
 
         <form id="signupForm" novalidate>
@@ -41,6 +41,22 @@
                 <div class="error" id="regPasswordError"></div>
             </div>
 
+            <div class="input-group">
+                <label for="confirmPassword">Confirm Password</label>
+                <div class="password-wrapper">
+                    <input
+                        type="password"
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        maxlength="30"
+                        placeholder="Підтвердіть Password"
+                        autocomplete="off"
+                    >
+                    <button type="button" id="toggleConfirmPassword" class="toggle-password">Show</button>
+                </div>
+                <div class="error" id="confirmPasswordError"></div>
+            </div>
+
             <button type="submit" id="signupSubmitBtn" class="primary-button">Зареєструватися</button>
         </form>
 
@@ -53,10 +69,14 @@
         document.addEventListener('DOMContentLoaded', () => {
             const toggleRegPassword = document.getElementById('toggleRegPassword');
             const regPassword = document.getElementById('regPassword');
+            const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+            const confirmPassword = document.getElementById('confirmPassword');
+
             const signupForm = document.getElementById('signupForm');
             const regEmail = document.getElementById('regEmail');
             const regEmailError = document.getElementById('regEmailError');
             const regPasswordError = document.getElementById('regPasswordError');
+            const confirmPasswordError = document.getElementById('confirmPasswordError');
 
             if (toggleRegPassword && regPassword) {
                 toggleRegPassword.addEventListener('click', () => {
@@ -66,12 +86,24 @@
                 });
             }
 
+            if (toggleConfirmPassword && confirmPassword) {
+                toggleConfirmPassword.addEventListener('click', () => {
+                    const isPass = confirmPassword.getAttribute('type') === 'password';
+                    confirmPassword.setAttribute('type', isPass ? 'text' : 'password');
+                    toggleConfirmPassword.textContent = isPass ? 'Hide' : 'Show';
+                });
+            }
+
             if (regEmail) {
                 regEmail.addEventListener('input', () => { regEmailError.textContent = ''; });
             }
 
             if (regPassword) {
                 regPassword.addEventListener('input', () => { regPasswordError.textContent = ''; });
+            }
+
+            if (confirmPassword) {
+                confirmPassword.addEventListener('input', () => { confirmPasswordError.textContent = ''; });
             }
 
             const getApiUrl = (endpoint) => {
@@ -88,14 +120,17 @@
                     let valid = true;
                     regEmailError.textContent = '';
                     regPasswordError.textContent = '';
+                    confirmPasswordError.textContent = '';
 
                     const emailVal = regEmail.value.trim();
                     const passVal = regPassword.value;
+                    const confirmPassVal = confirmPassword.value;
+
                     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
                     const passRegex = /^[a-zA-Z0-9_!@#$%^&*()]+$/;
 
                     if (!emailVal) {
-                        regEmailError.textContent = 'Поле Email є обов’язковим';
+                        regEmailError.textContent = 'Поле Email обов’язкове для заповнення';
                         valid = false;
                     } else if (emailVal.length > 30) {
                         regEmailError.textContent = 'Email не може перевищувати 30 символів';
@@ -106,7 +141,7 @@
                     }
 
                     if (!passVal) {
-                        regPasswordError.textContent = 'Поле Password є обов’язковим';
+                        regPasswordError.textContent = 'Поле Password обов’язкове для заповнення';
                         valid = false;
                     } else if (passVal.length > 30) {
                         regPasswordError.textContent = 'Пароль не може перевищувати 30 символів';
@@ -116,22 +151,41 @@
                         valid = false;
                     }
 
+                    if (!confirmPassVal) {
+                        confirmPasswordError.textContent = 'Поле Підтвердження пароля обов’язкове для заповнення';
+                        valid = false;
+                    } else if (confirmPassVal.length > 30) {
+                        confirmPasswordError.textContent = 'Підтвердження пароля не може перевищувати 30 символів';
+                        valid = false;
+                    } else if (confirmPassVal !== passVal) {
+                        confirmPasswordError.textContent = 'Паролі не збігаються.';
+                        valid = false;
+                    }
+
                     if (!valid) return;
 
                     try {
                         const response = await fetch(getApiUrl('/api/signup'), {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ email: emailVal, password: passVal })
+                            body: JSON.stringify({
+                                email: emailVal,
+                                password: passVal,
+                                confirmPassword: confirmPassVal
+                            })
                         });
 
                         const data = await response.json();
 
                         if (response.ok && data.success) {
-                            alert('Успішна реєстрація! Данні збережено в базу даних.');
+                            alert('Успішна реєстрація! Дані збережено в базу даних.');
                             window.location.href = '../index.html';
                         } else {
-                            regEmailError.textContent = data.message || 'Помилка реєстрації';
+                            if (data.message && data.message.includes('Паролі не збігаються')) {
+                                confirmPasswordError.textContent = data.message;
+                            } else {
+                                regEmailError.textContent = data.message || 'Помилка реєстрації';
+                            }
                         }
                     } catch (err) {
                         console.warn('Сервер недоступний, виклики в автономному режимі:', err);
